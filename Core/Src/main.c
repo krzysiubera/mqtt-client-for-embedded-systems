@@ -93,7 +93,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   struct mqtt_client_t mqtt_client;
-  MQTTClient_init(&mqtt_client, "KB");
+  const char *client_id = "krzysiu";
+  MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
 
   /* USER CODE END 2 */

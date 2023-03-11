@@ -48,9 +48,3 @@ void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw)
 	tcp_poll(tcp_connection_raw->pcb, tcp_poll_cb, 4);
 	tcp_accept(tcp_connection_raw->pcb, tcp_connected_cb);
 }
-
-void TCPConnectionRaw_write(struct tcp_connection_raw_t* tcp_connection_raw, char* packet)
-{
-	tcp_write(tcp_connection_raw->pcb, (void*) packet, sizeof(packet), 1);
-	tcp_output(tcp_connection_raw->pcb);
-}
