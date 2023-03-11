@@ -15,17 +15,13 @@ static err_t tcp_connected_cb(void* arg, struct tcp_pcb* npcb, err_t err)
 	return ERR_OK;
 }
 
-
 void TCPConnectionRaw_init(struct tcp_connection_raw_t* tcp_connection_raw)
 {
-	IP4_ADDR(&(tcp_connection_raw->broker_ip_addr), 192, 168, 1, 2);
+	IP4_ADDR(&tcp_connection_raw->broker_ip_addr, 192, 168, 1, 2);
 }
 
 void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw)
 {
 	tcp_connection_raw->pcb = tcp_new();
-	tcp_connect(tcp_connection_raw->pcb,
-				&tcp_connection_raw->broker_ip_addr,
-				TCP_CONNECTION_RAW_PORT,
-				tcp_connected_cb);
+	tcp_connect(tcp_connection_raw->pcb, &tcp_connection_raw->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
 }
