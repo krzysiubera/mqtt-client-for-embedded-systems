@@ -52,4 +52,5 @@ void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw)
 void TCPConnectionRaw_write(struct tcp_connection_raw_t* tcp_connection_raw, char* packet)
 {
 	tcp_write(tcp_connection_raw->pcb, (void*) packet, sizeof(packet), 1);
+	tcp_output(tcp_connection_raw->pcb);
 }

@@ -93,7 +93,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   struct mqtt_client_t mqtt_client;
-  MQTTClient_init(&mqtt_client, "KRZYSIU");
+  MQTTClient_init(&mqtt_client, "KB");
   MQTTClient_connect(&mqtt_client);
 
   /* USER CODE END 2 */
