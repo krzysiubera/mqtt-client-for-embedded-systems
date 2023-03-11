@@ -25,6 +25,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "mqtt_client.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -88,6 +91,10 @@ int main(void)
   MX_GPIO_Init();
   MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
+
+  struct mqtt_client_t mqtt_client;
+  MQTTClient_init(&mqtt_client, "KRZYSIU");
+  MQTTClient_connect(&mqtt_client);
 
   /* USER CODE END 2 */
 
