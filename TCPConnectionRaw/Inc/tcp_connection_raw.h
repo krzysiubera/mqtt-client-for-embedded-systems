@@ -11,6 +11,7 @@ struct tcp_connection_raw_t
 
 void TCPConnectionRaw_init(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw);
+void TCPConnectionRaw_write(struct tcp_connection_raw_t* tcp_connection_raw, char* packet);
 
 
 #endif
