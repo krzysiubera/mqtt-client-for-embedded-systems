@@ -14,7 +14,7 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	TCPConnectionRaw_connect(&mqtt_client->tcp_connection_raw);
 
 	size_t len_client_id = strlen(mqtt_client->client_id);
-	uint8_t fixed_header[] = {(1 << 4), 10 + len_client_id + 2};
+	uint8_t fixed_header[] = {(MQTT_CONNECT_PACKET << 4), 10 + len_client_id + 2};
 	uint8_t variable_header[] = {0x00, 0x04, 0x4D, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, KEEPALIVE / 1000, 0x00, len_client_id};
 
 	size_t len_fixed_header = sizeof(fixed_header);
