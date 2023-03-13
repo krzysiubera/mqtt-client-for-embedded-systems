@@ -1,14 +1,26 @@
 #include "tcp_connection_raw.h"
 #include "lwip/ip.h"
+#include "mqtt_client.h"
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
+	struct tcp_connection_raw_t* tcp_connection_raw = arg;
 	if (err == ERR_OK && p != NULL)
 	{
 		tcp_recved(pcb, p->tot_len);
+		uint8_t* mqtt_data = (uint8_t*) p->payload;
+		switch (mqtt_data[0] & 0xF0)
+		{
+		case MQTT_CONNACK_PACKET:
+			tcp_connection_raw->mqtt_connected = true;
+			break;
+		default:
+			break;
+		}
+
 	}
 	else
 	{
@@ -37,13 +49,14 @@ static err_t tcp_poll_cb(void* arg, struct tcp_pcb* tpcb)
 void TCPConnectionRaw_init(struct tcp_connection_raw_t* tcp_connection_raw)
 {
 	IP4_ADDR(&tcp_connection_raw->broker_ip_addr, 192, 168, 1, 2);
+	tcp_connection_raw->mqtt_connected = false;
 }
 
 void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw)
 {
 	tcp_connection_raw->pcb = tcp_new();
 	tcp_connect(tcp_connection_raw->pcb, &tcp_connection_raw->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
-	tcp_arg(tcp_connection_raw->pcb, NULL);
+	tcp_arg(tcp_connection_raw->pcb, tcp_connection_raw);
 	tcp_err(tcp_connection_raw->pcb, tcp_error_cb);
 	tcp_poll(tcp_connection_raw->pcb, tcp_poll_cb, 4);
 	tcp_accept(tcp_connection_raw->pcb, tcp_connected_cb);
