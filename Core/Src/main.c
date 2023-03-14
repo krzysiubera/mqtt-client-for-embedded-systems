@@ -27,7 +27,6 @@
 
 #include "mqtt_client.h"
 
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

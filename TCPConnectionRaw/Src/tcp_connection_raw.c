@@ -12,10 +12,14 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 	{
 		tcp_recved(pcb, p->tot_len);
 		uint8_t* mqtt_data = (uint8_t*) p->payload;
-		switch (mqtt_data[0] & 0xF0)
+		enum mqtt_packet_type_t pkt_type = mqtt_data[0] & 0xF0;
+		switch (pkt_type)
 		{
 		case MQTT_CONNACK_PACKET:
-			tcp_connection_raw->mqtt_connected = true;
+			if (mqtt_data[3] == MQTT_CONNECTION_ACCEPTED)
+			{
+				tcp_connection_raw->mqtt_connected = true;
+			}
 			break;
 		default:
 			break;

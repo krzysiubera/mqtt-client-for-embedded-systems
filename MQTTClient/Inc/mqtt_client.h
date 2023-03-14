@@ -27,6 +27,16 @@ enum mqtt_packet_type_t
 	MQTT_DISCONNECT_PACKET = (14 << 4)
 };
 
+enum mqtt_connection_rc_t
+{
+	MQTT_CONNECTION_ACCEPTED = 0,
+	MQTT_UNACCEPTABLE_PROTOCOL_VERSION = 1,
+	MQTT_IDENTIFIER_REJECTED = 2,
+	MQTT_SERVER_UNAVAILABLE = 3,
+	MQTT_BAD_CREDENTIALS = 4,
+	MQTT_NOT_AUTHORIZED = 5
+};
+
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
