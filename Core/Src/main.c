@@ -26,7 +26,6 @@
 /* USER CODE BEGIN Includes */
 
 #include "mqtt_client.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,9 +91,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   struct mqtt_client_t mqtt_client;
-  const char *client_id = "krzysiu";
+  const char *client_id = "stm krzysiu";
   MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
+
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "celsius 25");
+
 
   /* USER CODE END 2 */
 

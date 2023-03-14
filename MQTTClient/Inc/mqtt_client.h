@@ -40,6 +40,7 @@ enum mqtt_connection_rc_t
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
+void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg);
 
 
 #endif
