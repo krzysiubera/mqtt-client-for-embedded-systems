@@ -34,6 +34,9 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg)
 {
+	if (!mqtt_client->tcp_connection_raw.mqtt_connected)
+		return;
+
 	uint8_t topic_len = strlen(topic);
 	uint8_t msg_len = strlen(msg);
 	uint8_t remaining_len = 2 + topic_len + 2 + msg_len;
