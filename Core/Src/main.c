@@ -96,7 +96,7 @@ int main(void)
   MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
 
-  // MQTTClient_publish(&mqtt_client, "sensor/temp", "celsius 25");
+  printf("is mqtt connected: %d\n", mqtt_client.tcp_connection_raw.mqtt_connected);
 
   /* USER CODE END 2 */
 

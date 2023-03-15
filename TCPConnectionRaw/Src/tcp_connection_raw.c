@@ -1,8 +1,17 @@
 #include "tcp_connection_raw.h"
 #include "lwip/ip.h"
 #include "mqtt_packets.h"
+#include "lwip.h"
 
 #define TCP_CONNECTION_RAW_PORT 1883
+
+void TCPConnectionRaw_wait_until_mqtt_connected(struct tcp_connection_raw_t* tcp_connection_raw)
+{
+	while (!tcp_connection_raw->mqtt_connected)
+	{
+		MX_LWIP_Process();
+	}
+}
 
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
