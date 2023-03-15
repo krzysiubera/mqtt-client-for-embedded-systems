@@ -96,10 +96,7 @@ int main(void)
   MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
 
-  printf("msg sent\n");
-
   // MQTTClient_publish(&mqtt_client, "sensor/temp", "celsius 25");
-
 
   /* USER CODE END 2 */
 

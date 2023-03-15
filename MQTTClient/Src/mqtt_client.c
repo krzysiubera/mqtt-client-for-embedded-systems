@@ -1,8 +1,8 @@
+#include <string.h>
 #include "mqtt_client.h"
-#include "string.h"
+#include "mqtt_packets.h"
 
 #define KEEPALIVE_SEC 10
-
 #define FIXED_HEADER_LEN 2
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id)

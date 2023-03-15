@@ -1,6 +1,6 @@
 #include "tcp_connection_raw.h"
 #include "lwip/ip.h"
-#include "mqtt_client.h"
+#include "mqtt_packets.h"
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
