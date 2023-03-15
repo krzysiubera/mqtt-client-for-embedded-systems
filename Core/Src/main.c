@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "mqtt_client.h"
+#include "swv_print.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,7 +96,9 @@ int main(void)
   MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
 
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "celsius 25");
+  printf("msg sent\n");
+
+  // MQTTClient_publish(&mqtt_client, "sensor/temp", "celsius 25");
 
 
   /* USER CODE END 2 */
