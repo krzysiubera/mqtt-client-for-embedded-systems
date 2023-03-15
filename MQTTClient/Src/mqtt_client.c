@@ -39,20 +39,18 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 
 	uint8_t topic_len = strlen(topic);
 	uint8_t msg_len = strlen(msg);
-	uint8_t remaining_len = 2 + topic_len + 2 + msg_len;
+
+	uint8_t remaining_len = FIXED_HEADER_LEN + topic_len + msg_len;
 	uint8_t fixed_header[FIXED_HEADER_LEN] = {MQTT_PUBLISH_PACKET, remaining_len};
 
-	uint8_t packet_len = 2 + remaining_len;
-	uint8_t packet[packet_len];
-
 	uint8_t topic_len_encoded[] = {0x00, topic_len};
-	uint8_t msg_len_encoded[] = {0x00, msg_len};
+	uint8_t packet[FIXED_HEADER_LEN + remaining_len];
 
 	memcpy(packet, fixed_header, FIXED_HEADER_LEN);
 	memcpy(packet + FIXED_HEADER_LEN, topic_len_encoded, 2);
 	memcpy(packet + FIXED_HEADER_LEN + 2, topic, topic_len);
-	memcpy(packet + FIXED_HEADER_LEN + 2 + topic_len, msg_len_encoded, 2);
-	memcpy(packet + FIXED_HEADER_LEN + 2 + topic_len + 2, msg, msg_len);
+	memcpy(packet + FIXED_HEADER_LEN + 2 + topic_len, msg, msg_len);
 
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, packet_len);
+
+	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
 }
