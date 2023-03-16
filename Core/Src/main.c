@@ -111,6 +111,7 @@ int main(void)
   MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
   MQTTClient_subscribe(&mqtt_client, "drive/voltage");
 
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

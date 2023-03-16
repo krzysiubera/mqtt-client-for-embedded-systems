@@ -20,6 +20,7 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg);
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
+void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
 
 
 #endif
