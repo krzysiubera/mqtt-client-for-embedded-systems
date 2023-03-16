@@ -26,7 +26,6 @@
 /* USER CODE BEGIN Includes */
 
 #include "mqtt_client.h"
-#include "swv_print.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -107,12 +106,10 @@ int main(void)
 
   struct mqtt_client_t mqtt_client;
   const char *client_id = "stm krzysiu";
-  MQTTClient_init(&mqtt_client, client_id, mqtt_msg_received_user_cb);
+  MQTTClient_init(&mqtt_client, client_id, mqtt_msg_received_user_cb, HAL_GetTick);
   MQTTClient_connect(&mqtt_client);
   MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
   MQTTClient_subscribe(&mqtt_client, "drive/voltage");
-
-  printf("Subscription acknowledged\n");
 
   /* USER CODE END 2 */
 
@@ -123,6 +120,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  MQTTClient_keepalive(&mqtt_client);
 	  MX_LWIP_Process();
   }
   /* USER CODE END 3 */

@@ -3,9 +3,13 @@
 #include "mqtt_packets.h"
 #include "mqtt_cb_info.h"
 
-#define KEEPALIVE_SEC 10
+#include "swv_print.h"
+
+#define KEEPALIVE_SEC 60
 #define FIXED_HEADER_LEN 2
 
+static const uint32_t keepalive_ms = (uint32_t)(KEEPALIVE_SEC) * 1000UL;
+static const uint32_t tolerance_ms = 200;
 static uint16_t packet_id;
 
 static uint16_t generate_packet_id()
@@ -14,12 +18,17 @@ static uint16_t generate_packet_id()
 	return packet_id;
 }
 
-void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id, msg_received_cb_t msg_received_cb)
+void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id, msg_received_cb_t msg_received_cb,
+		             elapsed_time_cb_t elapsed_time_cb)
 {
 	mqtt_client->client_id = client_id;
+	mqtt_client->elapsed_time_cb = elapsed_time_cb;
+	mqtt_client->last_activity = 0;
+
 	mqtt_client->client_cb_info.mqtt_connected = false;
 	mqtt_client->client_cb_info.last_subscribe_success = false;
 	mqtt_client->client_cb_info.msg_received_cb = msg_received_cb;
+
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 
@@ -41,6 +50,8 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	memcpy(packet + FIXED_HEADER_LEN + len_variable_header, mqtt_client->client_id, len_client_id);
 
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, len_packet);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+
 	TCPConnectionRaw_wait_until_mqtt_connected(&mqtt_client->client_cb_info);
 }
 
@@ -63,8 +74,8 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 	memcpy(packet + FIXED_HEADER_LEN + 2, topic, topic_len);
 	memcpy(packet + FIXED_HEADER_LEN + 2 + topic_len, msg, msg_len);
 
-
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 }
 
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
@@ -87,8 +98,22 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
 	memcpy(packet + FIXED_HEADER_LEN + 2, topic_len_encoded, 2);
 	memcpy(packet + FIXED_HEADER_LEN + 2 + 2, topic, topic_len);
 	memcpy(packet + FIXED_HEADER_LEN + 2 + 2 + topic_len, &qos, 1);
+
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 	TCPConnectionRaw_wait_for_suback(&mqtt_client->client_cb_info);
 	mqtt_client->client_cb_info.last_subscribe_success = false;
+}
+
+void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
+{
+	uint32_t current_time = mqtt_client->elapsed_time_cb();
+	if ((current_time - mqtt_client->last_activity >= (keepalive_ms - tolerance_ms)) && (mqtt_client->client_cb_info.mqtt_connected))
+	{
+		printf("Sent keepalive at: %lu\n", current_time);
+		uint8_t pingreq_msg[] = {MQTT_PINGREQ_PACKET, 0x00};
+		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pingreq_msg, 2);
+		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+	}
 }
