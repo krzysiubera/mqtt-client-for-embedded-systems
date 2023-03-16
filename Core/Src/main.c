@@ -96,6 +96,9 @@ int main(void)
   MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
   MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
+  MQTTClient_subscribe(&mqtt_client, "timestamp/utc");
+
+  printf("Subscription acknowledged\n");
 
   /* USER CODE END 2 */
 

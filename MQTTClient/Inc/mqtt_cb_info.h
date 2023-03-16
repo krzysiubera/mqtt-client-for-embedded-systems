@@ -6,6 +6,7 @@
 struct mqtt_client_cb_info_t
 {
 	bool mqtt_connected;
+	bool last_subscribe_success;
 };
 
 #endif

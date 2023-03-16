@@ -6,10 +6,19 @@
 #define KEEPALIVE_SEC 10
 #define FIXED_HEADER_LEN 2
 
+static uint16_t packet_id;
+
+static uint16_t generate_packet_id()
+{
+	packet_id++;
+	return packet_id;
+}
+
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id)
 {
 	mqtt_client->client_id = client_id;
 	mqtt_client->client_cb_info.mqtt_connected = false;
+	mqtt_client->client_cb_info.last_subscribe_success = false;
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 
@@ -55,4 +64,30 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 
 
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
+}
+
+void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
+{
+	if (!mqtt_client->client_cb_info.mqtt_connected)
+		return;
+
+	uint8_t topic_len = strlen(topic);
+	uint8_t remaining_len = 2 + 2 + topic_len + 1;   // msg_identifier + topic_len + topic + qos
+	uint8_t fixed_header[FIXED_HEADER_LEN] = {(MQTT_SUBSCRIBE_PACKET | 2), remaining_len};
+
+	uint16_t current_packet_id = generate_packet_id();
+	uint8_t packet_id_encoded[2] = {(current_packet_id >> 8) & 0xFF, current_packet_id & 0xFF};
+	uint8_t topic_len_encoded[2] = {0x00, topic_len};
+	uint8_t qos = 0;
+
+	uint8_t packet[FIXED_HEADER_LEN + remaining_len];
+	memcpy(packet, fixed_header, FIXED_HEADER_LEN);
+	memcpy(packet + FIXED_HEADER_LEN, packet_id_encoded, 2);
+	memcpy(packet + FIXED_HEADER_LEN + 2, topic_len_encoded, 2);
+	memcpy(packet + FIXED_HEADER_LEN + 2 + 2, topic, topic_len);
+	memcpy(packet + FIXED_HEADER_LEN + 2 + 2 + topic_len, &qos, 1);
+	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
+
+	TCPConnectionRaw_wait_for_suback(&mqtt_client->client_cb_info);
+	mqtt_client->client_cb_info.last_subscribe_success = false;
 }

@@ -12,6 +12,12 @@ void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_client_cb_info_t* cl
 		MX_LWIP_Process();
 }
 
+void TCPConnectionRaw_wait_for_suback(struct mqtt_client_cb_info_t* client_cb_info)
+{
+	while (!client_cb_info->last_subscribe_success)
+		MX_LWIP_Process();
+}
+
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
@@ -29,6 +35,12 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 				client_cb_info->mqtt_connected = true;
 			}
 			break;
+		case MQTT_SUBACK_PACKET:
+			if (mqtt_data[4] == 0)   // this is for QOS=0. for other cases check len of packet
+			{
+				client_cb_info->last_subscribe_success = true;
+			}
+
 		default:
 			break;
 		}
