@@ -64,6 +64,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 	{
 		tcp_close(pcb);
 	}
+	pbuf_free(p);
 	return ERR_OK;
 }
 

@@ -3,8 +3,6 @@
 #include "mqtt_packets.h"
 #include "mqtt_cb_info.h"
 
-#include "swv_print.h"
-
 #define KEEPALIVE_SEC 60
 #define FIXED_HEADER_LEN 2
 
@@ -111,7 +109,6 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	uint32_t current_time = mqtt_client->elapsed_time_cb();
 	if ((current_time - mqtt_client->last_activity >= (keepalive_ms - tolerance_ms)) && (mqtt_client->client_cb_info.mqtt_connected))
 	{
-		printf("Sent keepalive at: %lu\n", current_time);
 		uint8_t pingreq_msg[] = {MQTT_PINGREQ_PACKET, 0x00};
 		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pingreq_msg, 2);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
