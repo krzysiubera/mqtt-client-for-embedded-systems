@@ -29,4 +29,12 @@ enum mqtt_connection_rc_t
 	MQTT_NOT_AUTHORIZED = 5
 };
 
+enum mqtt_suback_rc_t
+{
+	SUBACK_MAX_QOS_0 = 0x00,
+	SUBACK_MAX_Q0S_1 = 0x01,
+	SUBACK_MAX_QOS_2 = 0x02,
+	SUBACK_FAILURE = 0x80
+};
+
 #endif

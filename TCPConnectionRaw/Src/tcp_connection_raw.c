@@ -30,21 +30,26 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		switch (pkt_type)
 		{
 		case MQTT_CONNACK_PACKET:
-			if (mqtt_data[3] == MQTT_CONNECTION_ACCEPTED)
+		{
+			enum mqtt_connection_rc_t conn_rc = mqtt_data[3];
+			if (conn_rc == MQTT_CONNECTION_ACCEPTED)
 			{
 				client_cb_info->mqtt_connected = true;
 			}
 			break;
+		}
 		case MQTT_SUBACK_PACKET:
-			if (mqtt_data[4] == 0)   // this is for QOS=0. for other cases check len of packet
+		{
+			enum mqtt_suback_rc_t suback_rc = mqtt_data[4];
+			if (suback_rc == SUBACK_MAX_QOS_0)
 			{
 				client_cb_info->last_subscribe_success = true;
 			}
 			break;
+		}
 		default:
 			break;
 		}
-
 	}
 	else
 	{
