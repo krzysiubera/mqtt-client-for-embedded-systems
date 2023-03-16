@@ -6,22 +6,22 @@
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
-void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_client_cb_info_t* client_cb_info)
+void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_cb_info_t* cb_info)
 {
-	while (!client_cb_info->mqtt_connected)
+	while (!cb_info->mqtt_connected)
 		MX_LWIP_Process();
 }
 
-void TCPConnectionRaw_wait_for_suback(struct mqtt_client_cb_info_t* client_cb_info)
+void TCPConnectionRaw_wait_for_suback(struct mqtt_cb_info_t* cb_info)
 {
-	while (!client_cb_info->last_subscribe_success)
+	while (!cb_info->last_subscribe_success)
 		MX_LWIP_Process();
 }
 
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
-	struct mqtt_client_cb_info_t* client_cb_info = arg;
+	struct mqtt_cb_info_t* cb_info = arg;
 	if (err == ERR_OK && p != NULL)
 	{
 		tcp_recved(pcb, p->tot_len);
@@ -34,7 +34,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			enum mqtt_connection_rc_t conn_rc = mqtt_data[3];
 			if (conn_rc == MQTT_CONNECTION_ACCEPTED)
 			{
-				client_cb_info->mqtt_connected = true;
+				cb_info->mqtt_connected = true;
 			}
 			break;
 		}
@@ -43,7 +43,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			enum mqtt_suback_rc_t suback_rc = mqtt_data[4];
 			if (suback_rc == SUBACK_MAX_QOS_0)
 			{
-				client_cb_info->last_subscribe_success = true;
+				cb_info->last_subscribe_success = true;
 			}
 			break;
 		}
@@ -53,7 +53,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			uint16_t topic_len = (mqtt_data[2] << 8) | mqtt_data[3];
 			uint8_t* data = mqtt_data + 2 + 2 + topic_len;
 			uint32_t data_len = p->tot_len - (2 + 2 + topic_len);
-			client_cb_info->msg_received_cb(topic, topic_len, data, data_len);
+			cb_info->msg_received_cb(topic, topic_len, data, data_len);
 			break;
 		}
 		default:
@@ -90,11 +90,11 @@ void TCPConnectionRaw_init(struct tcp_connection_raw_t* tcp_connection_raw)
 	IP4_ADDR(&tcp_connection_raw->broker_ip_addr, 192, 168, 1, 2);
 }
 
-void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw, struct mqtt_client_cb_info_t* client_cb_info)
+void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw, struct mqtt_cb_info_t* cb_info)
 {
 	tcp_connection_raw->pcb = tcp_new();
 	tcp_connect(tcp_connection_raw->pcb, &tcp_connection_raw->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
-	tcp_arg(tcp_connection_raw->pcb, client_cb_info);
+	tcp_arg(tcp_connection_raw->pcb, cb_info);
 	tcp_err(tcp_connection_raw->pcb, tcp_error_cb);
 	tcp_poll(tcp_connection_raw->pcb, tcp_poll_cb, 4);
 	tcp_accept(tcp_connection_raw->pcb, tcp_connected_cb);

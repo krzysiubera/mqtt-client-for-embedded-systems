@@ -8,7 +8,7 @@ typedef uint32_t (*elapsed_time_cb_t)();
 struct mqtt_client_t
 {
 	struct tcp_connection_raw_t tcp_connection_raw;
-	struct mqtt_client_cb_info_t client_cb_info;
+	struct mqtt_cb_info_t cb_info;
 	const char* client_id;
 	elapsed_time_cb_t elapsed_time_cb;
 	uint32_t last_activity;
