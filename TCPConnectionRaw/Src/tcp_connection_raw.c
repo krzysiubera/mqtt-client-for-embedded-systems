@@ -40,7 +40,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			{
 				client_cb_info->last_subscribe_success = true;
 			}
-
+			break;
 		default:
 			break;
 		}
