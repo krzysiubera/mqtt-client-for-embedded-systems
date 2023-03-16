@@ -10,7 +10,7 @@ struct mqtt_client_t
 	const char* client_id;
 };
 
-void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id);
+void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id, msg_received_cb_t msg_received_cb);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg);
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic);

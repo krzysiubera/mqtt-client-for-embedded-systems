@@ -14,11 +14,12 @@ static uint16_t generate_packet_id()
 	return packet_id;
 }
 
-void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id)
+void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id, msg_received_cb_t msg_received_cb)
 {
 	mqtt_client->client_id = client_id;
 	mqtt_client->client_cb_info.mqtt_connected = false;
 	mqtt_client->client_cb_info.last_subscribe_success = false;
+	mqtt_client->client_cb_info.msg_received_cb = msg_received_cb;
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 

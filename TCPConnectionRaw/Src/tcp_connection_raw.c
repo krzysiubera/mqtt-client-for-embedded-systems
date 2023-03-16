@@ -47,6 +47,15 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			}
 			break;
 		}
+		case MQTT_PUBLISH_PACKET:
+		{
+			uint8_t* topic = mqtt_data + 4;
+			uint16_t topic_len = (mqtt_data[2] << 8) | mqtt_data[3];
+			uint8_t* data = mqtt_data + 2 + 2 + topic_len;
+			uint32_t data_len = p->tot_len - (2 + 2 + topic_len);
+			client_cb_info->msg_received_cb(topic, topic_len, data, data_len);
+			break;
+		}
 		default:
 			break;
 		}

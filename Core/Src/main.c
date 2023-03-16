@@ -27,6 +27,7 @@
 
 #include "mqtt_client.h"
 #include "swv_print.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,6 +58,19 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len)
+{
+	uint8_t topic_str[topic_len + 1];
+	memcpy(topic_str, topic, topic_len);
+	topic_str[topic_len] = '\0';
+
+	uint8_t data_str[data_len + 1];
+	memcpy(data_str, data, data_len);
+	data_str[data_len] = '\0';
+
+	printf("Topic: %s, Data: %s\n", topic_str, data_str);
+}
 
 /* USER CODE END 0 */
 
@@ -93,10 +107,10 @@ int main(void)
 
   struct mqtt_client_t mqtt_client;
   const char *client_id = "stm krzysiu";
-  MQTTClient_init(&mqtt_client, client_id);
+  MQTTClient_init(&mqtt_client, client_id, mqtt_msg_received_user_cb);
   MQTTClient_connect(&mqtt_client);
   MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
-  MQTTClient_subscribe(&mqtt_client, "timestamp/utc");
+  MQTTClient_subscribe(&mqtt_client, "drive/voltage");
 
   printf("Subscription acknowledged\n");
 
