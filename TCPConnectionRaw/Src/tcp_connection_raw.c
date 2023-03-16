@@ -1,22 +1,21 @@
 #include "tcp_connection_raw.h"
 #include "lwip/ip.h"
-#include "mqtt_packets.h"
 #include "lwip.h"
+#include "mqtt_packets.h"
+#include "mqtt_cb_info.h"
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
-void TCPConnectionRaw_wait_until_mqtt_connected(struct tcp_connection_raw_t* tcp_connection_raw)
+void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_client_cb_info_t* client_cb_info)
 {
-	while (!tcp_connection_raw->mqtt_connected)
-	{
+	while (!client_cb_info->mqtt_connected)
 		MX_LWIP_Process();
-	}
 }
 
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
-	struct tcp_connection_raw_t* tcp_connection_raw = arg;
+	struct mqtt_client_cb_info_t* client_cb_info = arg;
 	if (err == ERR_OK && p != NULL)
 	{
 		tcp_recved(pcb, p->tot_len);
@@ -27,7 +26,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		case MQTT_CONNACK_PACKET:
 			if (mqtt_data[3] == MQTT_CONNECTION_ACCEPTED)
 			{
-				tcp_connection_raw->mqtt_connected = true;
+				client_cb_info->mqtt_connected = true;
 			}
 			break;
 		default:
@@ -62,14 +61,13 @@ static err_t tcp_poll_cb(void* arg, struct tcp_pcb* tpcb)
 void TCPConnectionRaw_init(struct tcp_connection_raw_t* tcp_connection_raw)
 {
 	IP4_ADDR(&tcp_connection_raw->broker_ip_addr, 192, 168, 1, 2);
-	tcp_connection_raw->mqtt_connected = false;
 }
 
-void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw)
+void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw, struct mqtt_client_cb_info_t* client_cb_info)
 {
 	tcp_connection_raw->pcb = tcp_new();
 	tcp_connect(tcp_connection_raw->pcb, &tcp_connection_raw->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
-	tcp_arg(tcp_connection_raw->pcb, tcp_connection_raw);
+	tcp_arg(tcp_connection_raw->pcb, client_cb_info);
 	tcp_err(tcp_connection_raw->pcb, tcp_error_cb);
 	tcp_poll(tcp_connection_raw->pcb, tcp_poll_cb, 4);
 	tcp_accept(tcp_connection_raw->pcb, tcp_connected_cb);

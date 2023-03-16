@@ -1,6 +1,7 @@
 #include <string.h>
 #include "mqtt_client.h"
 #include "mqtt_packets.h"
+#include "mqtt_cb_info.h"
 
 #define KEEPALIVE_SEC 10
 #define FIXED_HEADER_LEN 2
@@ -8,12 +9,13 @@
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id)
 {
 	mqtt_client->client_id = client_id;
+	mqtt_client->client_cb_info.mqtt_connected = false;
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 {
-	TCPConnectionRaw_connect(&mqtt_client->tcp_connection_raw);
+	TCPConnectionRaw_connect(&mqtt_client->tcp_connection_raw, &mqtt_client->client_cb_info);
 
 	size_t len_client_id = strlen(mqtt_client->client_id);
 	uint8_t fixed_header[FIXED_HEADER_LEN] = {MQTT_CONNECT_PACKET, 10 + len_client_id + 2};
@@ -29,12 +31,12 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	memcpy(packet + FIXED_HEADER_LEN + len_variable_header, mqtt_client->client_id, len_client_id);
 
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, packet, len_packet);
-	TCPConnectionRaw_wait_until_mqtt_connected(&mqtt_client->tcp_connection_raw);
+	TCPConnectionRaw_wait_until_mqtt_connected(&mqtt_client->client_cb_info);
 }
 
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg)
 {
-	if (!mqtt_client->tcp_connection_raw.mqtt_connected)
+	if (!mqtt_client->client_cb_info.mqtt_connected)
 		return;
 
 	uint8_t topic_len = strlen(topic);

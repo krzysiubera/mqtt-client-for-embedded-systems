@@ -95,7 +95,7 @@ int main(void)
   const char *client_id = "stm krzysiu";
   MQTTClient_init(&mqtt_client, client_id);
   MQTTClient_connect(&mqtt_client);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius");
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
 
   /* USER CODE END 2 */
 
