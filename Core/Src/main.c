@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "mqtt_client.h"
+#include "swv_print.h"
 #include <string.h>
 /* USER CODE END Includes */
 

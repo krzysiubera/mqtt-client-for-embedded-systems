@@ -22,10 +22,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id, m
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->last_activity = 0;
 
-	mqtt_client->cb_info.mqtt_connected = false;
-	mqtt_client->cb_info.last_subscribe_success = false;
-	mqtt_client->cb_info.msg_received_cb = msg_received_cb;
-
+	MQTTCbInfo_init(&mqtt_client->cb_info, msg_received_cb);
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 
