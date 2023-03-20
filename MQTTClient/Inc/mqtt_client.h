@@ -2,20 +2,43 @@
 #define MQTT_CLIENT_H
 
 #include "tcp_connection_raw.h"
+#include <stdbool.h>
 
 typedef uint32_t (*elapsed_time_cb_t)();
+
+enum mqtt_qos_t
+{
+	MQTT_QOS_0 = 0,
+	MQTT_QOS_1 = 1,
+	MQTT_QOS_2 = 2,
+};
+
+struct mqtt_client_connect_opts_t
+{
+	char* client_id;			// required - must not be null
+	char* username;				// can be null
+	char* password;				// can be null, if username is null, then password is ignored
+
+	char* will_topic;			// can be null
+	char* will_msg;				// if will_topic is not null, then will_msg must not be null
+	enum mqtt_qos_t will_qos;	// must be 0 if will_topic is null
+	bool will_retain;			// must be false if will_topic is null
+};
+
 
 struct mqtt_client_t
 {
 	struct tcp_connection_raw_t tcp_connection_raw;
 	struct mqtt_cb_info_t cb_info;
-	const char* client_id;
 	elapsed_time_cb_t elapsed_time_cb;
 	uint32_t last_activity;
+	struct mqtt_client_connect_opts_t* conn_opts;
 };
 
-void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id,
-		             msg_received_cb_t msg_received_cb, elapsed_time_cb_t elapsed_time_cb);
+void MQTTClient_init(struct mqtt_client_t* mqtt_client,
+		             msg_received_cb_t msg_received_cb,
+					 elapsed_time_cb_t elapsed_time_cb,
+					 struct mqtt_client_connect_opts_t* conn_opts);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg);
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic);

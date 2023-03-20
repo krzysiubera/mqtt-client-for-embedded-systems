@@ -112,7 +112,7 @@ void TCPConnectionRaw_write(struct tcp_connection_raw_t* tcp_connection_raw, uin
 	tcp_write(tcp_connection_raw->pcb, (void*) packet, (uint16_t) len_packet, 1);
 }
 
-void TCPConnectionRaw_output(struct tcp_connection_raw* tcp_connection_raw)
+void TCPConnectionRaw_output(struct tcp_connection_raw_t* tcp_connection_raw)
 {
 	tcp_output(tcp_connection_raw->pcb);
 }

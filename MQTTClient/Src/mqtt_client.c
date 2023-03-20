@@ -3,10 +3,12 @@
 #include "mqtt_packets.h"
 #include "mqtt_cb_info.h"
 
-#define KEEPALIVE_SEC 30
+#define MQTT_PROTOCOL_VERSION 0x04
+#define CLEAN_SESSION 1
 #define FIXED_HEADER_LEN 2
 
-static const uint32_t keepalive_ms = (uint32_t)(KEEPALIVE_SEC) * 1000UL;
+static const uint16_t keepalive_sec = 30;
+static const uint32_t keepalive_ms = (uint32_t)(keepalive_sec) * 1000UL;
 static uint16_t packet_id;
 
 static uint16_t generate_packet_id()
@@ -15,12 +17,24 @@ static uint16_t generate_packet_id()
 	return packet_id;
 }
 
-void MQTTClient_init(struct mqtt_client_t* mqtt_client, const char* client_id, msg_received_cb_t msg_received_cb,
-		             elapsed_time_cb_t elapsed_time_cb)
+static void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
 {
-	mqtt_client->client_id = client_id;
+	uint8_t str_len_encoded[2];
+	str_len_encoded[0] = (len >> 8) & 0xFF;
+	str_len_encoded[1] = (len & 0xFF);
+	TCPConnectionRaw_write(tcp_connection_raw, str_len_encoded, 2);
+	TCPConnectionRaw_write(tcp_connection_raw, msg, len);
+}
+
+
+void MQTTClient_init(struct mqtt_client_t* mqtt_client,
+					 msg_received_cb_t msg_received_cb,
+		             elapsed_time_cb_t elapsed_time_cb,
+					 struct mqtt_client_connect_opts_t* conn_opts)
+{
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->last_activity = 0;
+	mqtt_client->conn_opts = conn_opts;
 
 	MQTTCbInfo_init(&mqtt_client->cb_info, msg_received_cb);
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
@@ -33,20 +47,73 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 
 	TCPConnectionRaw_connect(&mqtt_client->tcp_connection_raw, &mqtt_client->cb_info);
 
-	size_t len_client_id = strlen(mqtt_client->client_id);
-	uint8_t fixed_header[FIXED_HEADER_LEN] = {MQTT_CONNECT_PACKET, 10 + len_client_id + 2};
-	uint8_t variable_header[] = {0x00, 0x04, 0x4D, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, KEEPALIVE_SEC, 0x00, len_client_id};
+	bool is_will_present = (mqtt_client->conn_opts->will_topic != NULL);
+	bool is_username_present = (mqtt_client->conn_opts->username != NULL);
+	bool is_password_present = false;
+	if (is_username_present)
+		is_password_present = (mqtt_client->conn_opts->password != NULL);
 
-	size_t len_variable_header = sizeof(variable_header);
-	size_t len_packet = FIXED_HEADER_LEN + len_variable_header + len_client_id;
+	uint16_t client_id_len = strlen(mqtt_client->conn_opts->client_id);
+	uint16_t will_topic_len = 0;
+	uint16_t will_msg_len = 0;
+	if (is_will_present)
+	{
+		will_topic_len = strlen(mqtt_client->conn_opts->will_topic);
+		will_msg_len = strlen(mqtt_client->conn_opts->will_msg);
+	}
+	uint16_t username_len = 0;
+	if (is_username_present)
+		username_len = strlen(mqtt_client->conn_opts->username);
+	uint16_t password_len = 0;
+	if (is_password_present)
+		password_len = strlen(mqtt_client->conn_opts->password);
 
-	uint8_t packet[len_packet];
 
-	memcpy(packet, fixed_header, FIXED_HEADER_LEN);
-	memcpy(packet + FIXED_HEADER_LEN, variable_header, len_variable_header);
-	memcpy(packet + FIXED_HEADER_LEN + len_variable_header, mqtt_client->client_id, len_client_id);
+	uint8_t remaining_len = 10 + 2 + client_id_len;
+	if (is_will_present)
+		remaining_len += (2 + will_topic_len + 2 + will_msg_len);
+	if (is_username_present)
+		remaining_len += (2 + username_len);
+	if (is_password_present)
+		remaining_len += (2 + password_len);
 
-	TCPConnectionRaw_write_and_output(&mqtt_client->tcp_connection_raw, packet, len_packet);
+
+	uint8_t connect_flags = (is_username_present << 7) |
+						    (is_password_present << 6) |
+							(mqtt_client->conn_opts->will_retain << 5) |
+			                (mqtt_client->conn_opts->will_qos << 4) |
+							(is_will_present << 2) |
+							(CLEAN_SESSION << 1);
+	uint8_t header[12] = {
+			MQTT_CONNECT_PACKET,
+			remaining_len,
+			0x00,
+			0x04,
+			'M',
+			'Q',
+			'T',
+			'T',
+			MQTT_PROTOCOL_VERSION,
+			connect_flags,
+			(keepalive_sec >> 8) & 0xFF,
+			keepalive_sec & 0xFF
+	};
+	// write header
+	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, header, sizeof(header));
+
+	// write payload
+	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
+	if (is_will_present)
+	{
+		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_topic, will_topic_len);
+		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_msg, will_msg_len);
+	}
+	if (is_username_present)
+		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->username, username_len);
+	if (is_password_present)
+		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->password, password_len);
+
+	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 	TCPConnectionRaw_wait_until_mqtt_connected(&mqtt_client->cb_info);

@@ -28,6 +28,7 @@
 #include "mqtt_client.h"
 #include "swv_print.h"
 #include <string.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,8 +107,17 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   struct mqtt_client_t mqtt_client;
-  const char *client_id = "stm krzysiu";
-  MQTTClient_init(&mqtt_client, client_id, mqtt_msg_received_user_cb, HAL_GetTick);
+  struct mqtt_client_connect_opts_t conn_opts;
+  conn_opts.client_id = "stm krzysiu";
+  conn_opts.username = "login";
+  conn_opts.password = NULL;
+  conn_opts.will_topic = NULL;
+  conn_opts.will_msg = NULL;
+  conn_opts.will_qos = MQTT_QOS_0;
+  conn_opts.will_retain = false;
+
+
+  MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   MQTTClient_connect(&mqtt_client);
   MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
   MQTTClient_subscribe(&mqtt_client, "drive/voltage");
