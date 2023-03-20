@@ -13,7 +13,7 @@ struct tcp_connection_raw_t
 
 void TCPConnectionRaw_init(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw, struct mqtt_cb_info_t* cb_info);
-void TCPConnectionRaw_write(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* packet, size_t len_packet);
+void TCPConnectionRaw_write_and_output(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* packet, size_t len_packet);
 void TCPConnectionRaw_close(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_cb_info_t* cb_info);
 void TCPConnectionRaw_wait_for_suback(struct mqtt_cb_info_t* cb_info);
