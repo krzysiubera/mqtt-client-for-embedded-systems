@@ -15,7 +15,7 @@ void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_cb_info_t* cb_info)
 
 void TCPConnectionRaw_wait_for_suback(struct mqtt_cb_info_t* cb_info)
 {
-	while (!cb_info->last_subscribe_success)
+	while (!cb_info->suback_received)
 		MX_LWIP_Process();
 }
 
@@ -62,7 +62,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			enum mqtt_suback_rc_t suback_rc = mqtt_data[4];
 			if (suback_rc == SUBACK_MAX_QOS_0)
 			{
-				cb_info->last_subscribe_success = true;
+				cb_info->suback_received = true;
 			}
 			break;
 		}

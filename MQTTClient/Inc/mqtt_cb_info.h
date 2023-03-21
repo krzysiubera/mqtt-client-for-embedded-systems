@@ -9,7 +9,7 @@ typedef void (*msg_received_cb_t)(uint8_t* topic, uint16_t topic_len, uint8_t* d
 struct mqtt_cb_info_t
 {
 	bool mqtt_connected;
-	bool last_subscribe_success;
+	bool suback_received;
 	bool puback_received;
 	bool pubrec_received;
 	bool pubcomp_received;

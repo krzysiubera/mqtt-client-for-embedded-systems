@@ -159,7 +159,7 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 	TCPConnectionRaw_wait_for_suback(&mqtt_client->cb_info);
-	mqtt_client->cb_info.last_subscribe_success = false;
+	mqtt_client->cb_info.suback_received = false;
 }
 
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
