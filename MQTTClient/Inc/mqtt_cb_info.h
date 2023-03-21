@@ -10,6 +10,9 @@ struct mqtt_cb_info_t
 {
 	bool mqtt_connected;
 	bool last_subscribe_success;
+	bool puback_received;
+	bool pubrec_received;
+	bool pubcomp_received;
 	msg_received_cb_t msg_received_cb;
 };
 

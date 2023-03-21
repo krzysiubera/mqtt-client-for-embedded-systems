@@ -19,6 +19,9 @@ void TCPConnectionRaw_output(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_close(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_cb_info_t* cb_info);
 void TCPConnectionRaw_wait_for_suback(struct mqtt_cb_info_t* cb_info);
+void TCPConnectionRaw_wait_for_puback(struct mqtt_cb_info_t* cb_info);
+void TCPConnectionRaw_wait_for_pubrec(struct mqtt_cb_info_t* cb_info);
+void TCPConnectionRaw_wait_for_pubcomp(struct mqtt_cb_info_t* cb_info);
 
 
 #endif

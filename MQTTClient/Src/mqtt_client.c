@@ -9,13 +9,10 @@
 
 static const uint16_t keepalive_sec = 30;
 static const uint32_t keepalive_ms = (uint32_t)(keepalive_sec) * 1000UL;
-static uint16_t packet_id;
 
-static uint16_t generate_packet_id()
-{
-	packet_id++;
-	return packet_id;
-}
+static uint16_t pub_packet_id = 0;
+static uint16_t sub_packet_id = 0;
+
 
 static void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
 {
@@ -24,6 +21,14 @@ static void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_ra
 	str_len_encoded[1] = (len & 0xFF);
 	TCPConnectionRaw_write(tcp_connection_raw, str_len_encoded, 2);
 	TCPConnectionRaw_write(tcp_connection_raw, msg, len);
+}
+
+static void send_u16(struct tcp_connection_raw_t* tcp_connection_raw, uint16_t len)
+{
+	uint8_t u16_as_bytes[2];
+	u16_as_bytes[0] = (len >> 8) & 0xFF;
+	u16_as_bytes[1] = (len & 0xFF);
+	TCPConnectionRaw_write(tcp_connection_raw, u16_as_bytes, 2);
 }
 
 
@@ -85,27 +90,48 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	TCPConnectionRaw_wait_until_mqtt_connected(&mqtt_client->cb_info);
 }
 
-void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg)
+void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, enum mqtt_qos_t qos, bool retain)
 {
 	if (!mqtt_client->cb_info.mqtt_connected)
 		return;
 
-	uint8_t topic_len = strlen(topic);
-	uint8_t msg_len = strlen(msg);
+	uint8_t remaining_len = 2 + strlen(topic) + 2 + strlen(msg);
+	uint8_t fixed_header[2] = {(MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain), remaining_len};
+	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, fixed_header, 2);
 
-	uint8_t remaining_len = FIXED_HEADER_LEN + topic_len + msg_len;
-	uint8_t fixed_header[FIXED_HEADER_LEN] = {MQTT_PUBLISH_PACKET, remaining_len};
+	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
+	send_u16(&mqtt_client->tcp_connection_raw, pub_packet_id);
 
-	uint8_t topic_len_encoded[] = {0x00, topic_len};
-	uint8_t packet[FIXED_HEADER_LEN + remaining_len];
+	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
-	memcpy(packet, fixed_header, FIXED_HEADER_LEN);
-	memcpy(packet + FIXED_HEADER_LEN, topic_len_encoded, 2);
-	memcpy(packet + FIXED_HEADER_LEN + 2, topic, topic_len);
-	memcpy(packet + FIXED_HEADER_LEN + 2 + topic_len, msg, msg_len);
-
-	TCPConnectionRaw_write_and_output(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
+	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+
+	if (qos == MQTT_QOS_0)
+	{
+		// do nothing - fire and forget
+	}
+	else if (qos == MQTT_QOS_1)
+	{
+		TCPConnectionRaw_wait_for_puback(&mqtt_client->cb_info);
+		mqtt_client->cb_info.puback_received = false;
+	}
+	else
+	{
+		TCPConnectionRaw_wait_for_pubrec(&mqtt_client->cb_info);
+		mqtt_client->cb_info.pubrec_received = false;
+
+		// send pubrel
+		uint8_t pubrel_pkt[4] = {(MQTT_PUBREL_PACKET | 0x02), 0x02, (pub_packet_id >> 8) & 0xFF, (pub_packet_id) & 0xFF};
+		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pubrel_pkt, 4);
+		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
+		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+
+		TCPConnectionRaw_wait_for_pubcomp(&mqtt_client->cb_info);
+		mqtt_client->cb_info.pubcomp_received = false;
+	}
+
+	pub_packet_id++;
 }
 
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
@@ -117,8 +143,8 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
 	uint8_t remaining_len = 2 + 2 + topic_len + 1;   // msg_identifier + topic_len + topic + qos
 	uint8_t fixed_header[FIXED_HEADER_LEN] = {(MQTT_SUBSCRIBE_PACKET | 2), remaining_len};
 
-	uint16_t current_packet_id = generate_packet_id();
-	uint8_t packet_id_encoded[2] = {(current_packet_id >> 8) & 0xFF, current_packet_id & 0xFF};
+	uint8_t packet_id_encoded[2] = {(sub_packet_id >> 8) & 0xFF, sub_packet_id & 0xFF};
+	sub_packet_id++;
 	uint8_t topic_len_encoded[2] = {0x00, topic_len};
 	uint8_t qos = 0;
 

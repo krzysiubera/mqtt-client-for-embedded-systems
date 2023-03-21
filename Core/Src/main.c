@@ -119,7 +119,12 @@ int main(void)
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   MQTTClient_connect(&mqtt_client);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera");
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 Celsius krzysiubera", MQTT_QOS_0, false);
+  HAL_Delay(1000);
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "msg of qos 1", MQTT_QOS_1, false);
+  HAL_Delay(1000);
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "msg of qos 2", MQTT_QOS_2, false);
+  HAL_Delay(1000);
   MQTTClient_subscribe(&mqtt_client, "drive/voltage");
 
 

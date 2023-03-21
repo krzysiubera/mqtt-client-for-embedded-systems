@@ -4,5 +4,8 @@ void MQTTCbInfo_init(struct mqtt_cb_info_t* cb_info, msg_received_cb_t msg_recei
 {
 	cb_info->mqtt_connected = false;
 	cb_info->last_subscribe_success = false;
+	cb_info->puback_received = false;
+	cb_info->pubrec_received = false;
+	cb_info->pubcomp_received = false;
 	cb_info->msg_received_cb = msg_received_cb;
 }

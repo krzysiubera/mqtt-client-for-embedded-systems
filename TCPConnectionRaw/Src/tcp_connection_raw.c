@@ -19,6 +19,24 @@ void TCPConnectionRaw_wait_for_suback(struct mqtt_cb_info_t* cb_info)
 		MX_LWIP_Process();
 }
 
+void TCPConnectionRaw_wait_for_puback(struct mqtt_cb_info_t* cb_info)
+{
+	while (!cb_info->puback_received)
+		MX_LWIP_Process();
+}
+
+void TCPConnectionRaw_wait_for_pubrec(struct mqtt_cb_info_t* cb_info)
+{
+	while (!cb_info->pubrec_received)
+		MX_LWIP_Process();
+}
+
+void TCPConnectionRaw_wait_for_pubcomp(struct mqtt_cb_info_t* cb_info)
+{
+	while (!cb_info->pubcomp_received)
+		MX_LWIP_Process();
+}
+
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
@@ -57,6 +75,22 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			cb_info->msg_received_cb(topic, topic_len, data, data_len);
 			break;
 		}
+		case MQTT_PUBACK_PACKET:
+		{
+			cb_info->puback_received = true;
+			break;
+		}
+		case MQTT_PUBREC_PACKET:
+		{
+			cb_info->pubrec_received = true;
+			break;
+		}
+		case MQTT_PUBCOMP_PACKET:
+		{
+			cb_info->pubcomp_received = true;
+			break;
+		}
+
 		default:
 			break;
 		}

@@ -40,7 +40,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
-void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg);
+void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, enum mqtt_qos_t qos, bool retain);
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
 void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
