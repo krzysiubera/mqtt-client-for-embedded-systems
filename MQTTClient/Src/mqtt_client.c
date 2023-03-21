@@ -10,8 +10,7 @@
 static const uint16_t keepalive_sec = 30;
 static const uint32_t keepalive_ms = (uint32_t)(keepalive_sec) * 1000UL;
 
-static uint16_t pub_packet_id = 0;
-static uint16_t sub_packet_id = 0;
+static uint16_t packet_id = 0;
 
 
 static void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
@@ -100,7 +99,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, fixed_header, 2);
 
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
-	send_u16(&mqtt_client->tcp_connection_raw, pub_packet_id);
+	send_u16(&mqtt_client->tcp_connection_raw, packet_id);
 
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
@@ -122,7 +121,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		mqtt_client->cb_info.pubrec_received = false;
 
 		// send pubrel
-		uint8_t pubrel_pkt[4] = {(MQTT_PUBREL_PACKET | 0x02), 0x02, (pub_packet_id >> 8) & 0xFF, (pub_packet_id) & 0xFF};
+		uint8_t pubrel_pkt[4] = {(MQTT_PUBREL_PACKET | 0x02), 0x02, (packet_id >> 8) & 0xFF, (packet_id) & 0xFF};
 		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pubrel_pkt, 4);
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
@@ -131,7 +130,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		mqtt_client->cb_info.pubcomp_received = false;
 	}
 
-	pub_packet_id++;
+	packet_id++;
 }
 
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
@@ -143,8 +142,7 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
 	uint8_t remaining_len = 2 + 2 + topic_len + 1;   // msg_identifier + topic_len + topic + qos
 	uint8_t fixed_header[FIXED_HEADER_LEN] = {(MQTT_SUBSCRIBE_PACKET | 2), remaining_len};
 
-	uint8_t packet_id_encoded[2] = {(sub_packet_id >> 8) & 0xFF, sub_packet_id & 0xFF};
-	sub_packet_id++;
+	uint8_t packet_id_encoded[2] = {(packet_id >> 8) & 0xFF, packet_id & 0xFF};
 	uint8_t topic_len_encoded[2] = {0x00, topic_len};
 	uint8_t qos = 0;
 
@@ -160,6 +158,8 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
 
 	TCPConnectionRaw_wait_for_suback(&mqtt_client->cb_info);
 	mqtt_client->cb_info.suback_received = false;
+
+	packet_id++;
 }
 
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
