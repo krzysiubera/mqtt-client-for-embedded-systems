@@ -17,7 +17,7 @@ struct mqtt_client_connect_opts_t
 {
 	char* client_id;			// required - must not be null
 	char* username;				// can be null
-	char* password;				// can be null, if username is null, then password is ignored
+	char* password;				// can be null, if username is null, then password must be null as well
 
 	char* will_topic;			// can be null
 	char* will_msg;				// if will_topic is not null, then will_msg must not be null

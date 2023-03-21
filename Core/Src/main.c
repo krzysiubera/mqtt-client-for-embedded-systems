@@ -110,9 +110,9 @@ int main(void)
   struct mqtt_client_connect_opts_t conn_opts;
   conn_opts.client_id = "stm krzysiu";
   conn_opts.username = "login";
-  conn_opts.password = NULL;
-  conn_opts.will_topic = NULL;
-  conn_opts.will_msg = NULL;
+  conn_opts.password = "pass";
+  conn_opts.will_topic = "info/device";
+  conn_opts.will_msg = "stm disc";
   conn_opts.will_qos = MQTT_QOS_0;
   conn_opts.will_retain = false;
 
