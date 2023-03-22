@@ -167,7 +167,8 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	if ((current_time - mqtt_client->last_activity >= keepalive_ms) && (mqtt_client->cb_info.mqtt_connected))
 	{
 		uint8_t pingreq_msg[] = {MQTT_PINGREQ_PACKET, 0x00};
-		TCPConnectionRaw_write_and_output(&mqtt_client->tcp_connection_raw, pingreq_msg, 2);
+		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pingreq_msg, 2);
+		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 	}
 }
@@ -178,7 +179,8 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 		return;
 
 	uint8_t disconnect_msg[] = {MQTT_DISCONNECT_PACKET, 0x00};
-	TCPConnectionRaw_write_and_output(&mqtt_client->tcp_connection_raw, disconnect_msg, 2);
+	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, disconnect_msg, 2);
+	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
 	mqtt_client->cb_info.mqtt_connected = false;
 }
