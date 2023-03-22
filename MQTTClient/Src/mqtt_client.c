@@ -3,12 +3,12 @@
 #include "mqtt_packets.h"
 #include "mqtt_cb_info.h"
 
-#define MQTT_PROTOCOL_VERSION 0x04
 #define CLEAN_SESSION 1
-#define FIXED_HEADER_LEN 2
 
 static const uint16_t keepalive_sec = 30;
-static const uint32_t keepalive_ms = (uint32_t)(keepalive_sec) * 1000UL;
+static const uint32_t keepalive_ms = (uint32_t)keepalive_sec * 1000;
+static char* protocol_name = "MQTT";
+static uint8_t protocol_version = 0x04;
 
 static uint16_t packet_id = 0;
 
@@ -22,12 +22,21 @@ static void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_ra
 	TCPConnectionRaw_write(tcp_connection_raw, msg, len);
 }
 
-static void send_u16(struct tcp_connection_raw_t* tcp_connection_raw, uint16_t len)
+static void send_u16(struct tcp_connection_raw_t* tcp_connection_raw, uint16_t* val)
 {
-	uint8_t u16_as_bytes[2];
-	u16_as_bytes[0] = (len >> 8) & 0xFF;
-	u16_as_bytes[1] = (len & 0xFF);
+	uint16_t len = *val;
+	uint8_t u16_as_bytes[2] = {(len >> 8) & 0xFF, (len & 0xFF)};
 	TCPConnectionRaw_write(tcp_connection_raw, u16_as_bytes, 2);
+}
+
+static void send_u8(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* val)
+{
+	TCPConnectionRaw_write(tcp_connection_raw, val, 1);
+}
+
+static void send_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* fixed_header)
+{
+	TCPConnectionRaw_write(tcp_connection_raw, fixed_header, 2);
 }
 
 
@@ -66,11 +75,14 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	uint8_t connect_flags = ((username_len > 0) << 7) |((password_len > 0) << 6) | (mqtt_client->conn_opts->will_retain << 5) |
 			                (mqtt_client->conn_opts->will_qos << 4) | ((will_msg_len > 0) << 2) | (CLEAN_SESSION << 1);
 
-	uint8_t header[12] = {MQTT_CONNECT_PACKET, remaining_len, 0x00, 0x04, 'M', 'Q', 'T', 'T', MQTT_PROTOCOL_VERSION, connect_flags,
-			             (keepalive_sec >> 8) & 0xFF, keepalive_sec & 0xFF};
-
-	// write header
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, header, sizeof(header));
+	// fix around: https://stackoverflow.com/questions/3025050/error-initializer-element-is-not-constant-when-trying-to-initialize-variable-w
+	uint16_t ka = (uint16_t) keepalive_sec;
+	uint8_t fixed_header[2] = {MQTT_CONNECT_PACKET, remaining_len};
+	send_fixed_header(&mqtt_client->tcp_connection_raw, fixed_header);
+	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
+	send_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
+	send_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
+	send_u16(&mqtt_client->tcp_connection_raw, &ka);
 
 	// write payload
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
@@ -99,11 +111,11 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		remaining_len += 2;
 
 	uint8_t fixed_header[2] = {(MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain), remaining_len};
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, fixed_header, 2);
+	send_fixed_header(&mqtt_client->tcp_connection_raw, fixed_header);
 
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
 	if (qos != 0)
-		send_u16(&mqtt_client->tcp_connection_raw, packet_id);
+		send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
 
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
@@ -126,8 +138,10 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		mqtt_client->cb_info.pubrec_received = false;
 
 		// send pubrel
-		uint8_t pubrel_pkt[4] = {(MQTT_PUBREL_PACKET | 0x02), 0x02, (packet_id >> 8) & 0xFF, (packet_id) & 0xFF};
-		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pubrel_pkt, 4);
+		uint8_t pubrel_fixed_header[2] = {(MQTT_PUBREL_PACKET | 0x02), 0x02};
+		send_fixed_header(&mqtt_client->tcp_connection_raw, pubrel_fixed_header);
+		send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
@@ -145,11 +159,11 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_
 
 	uint8_t remaining_len = 2 + 2 + strlen(topic) + 1;
 	uint8_t fixed_header[2] = {(MQTT_SUBSCRIBE_PACKET | 0x02), remaining_len};
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, fixed_header, 2);
+	send_fixed_header(&mqtt_client->tcp_connection_raw, fixed_header);
 
-	send_u16(&mqtt_client->tcp_connection_raw, packet_id);
+	send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, &qos, 1);
+	send_u8(&mqtt_client->tcp_connection_raw, &qos);
 	mqtt_client->cb_info.last_qos_subscribed = qos;
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
@@ -167,7 +181,7 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	if ((current_time - mqtt_client->last_activity >= keepalive_ms) && (mqtt_client->cb_info.mqtt_connected))
 	{
 		uint8_t pingreq_msg[] = {MQTT_PINGREQ_PACKET, 0x00};
-		TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, pingreq_msg, 2);
+		send_fixed_header(&mqtt_client->tcp_connection_raw, pingreq_msg);
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 	}
@@ -179,7 +193,7 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 		return;
 
 	uint8_t disconnect_msg[] = {MQTT_DISCONNECT_PACKET, 0x00};
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, disconnect_msg, 2);
+	send_fixed_header(&mqtt_client->tcp_connection_raw, disconnect_msg);
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
 	mqtt_client->cb_info.mqtt_connected = false;
