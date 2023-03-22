@@ -86,7 +86,7 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	TCPConnectionRaw_wait_until_mqtt_connected(&mqtt_client->cb_info);
+	TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.mqtt_connected);
 }
 
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, enum mqtt_qos_t qos, bool retain)
@@ -117,12 +117,12 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 	}
 	else if (qos == MQTT_QOS_1)
 	{
-		TCPConnectionRaw_wait_for_puback(&mqtt_client->cb_info);
+		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.puback_received);
 		mqtt_client->cb_info.puback_received = false;
 	}
 	else
 	{
-		TCPConnectionRaw_wait_for_pubrec(&mqtt_client->cb_info);
+		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.pubrec_received);
 		mqtt_client->cb_info.pubrec_received = false;
 
 		// send pubrel
@@ -131,7 +131,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-		TCPConnectionRaw_wait_for_pubcomp(&mqtt_client->cb_info);
+		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.pubcomp_received);
 		mqtt_client->cb_info.pubcomp_received = false;
 	}
 
@@ -161,7 +161,7 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic)
 	TCPConnectionRaw_write_and_output(&mqtt_client->tcp_connection_raw, packet, FIXED_HEADER_LEN + remaining_len);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	TCPConnectionRaw_wait_for_suback(&mqtt_client->cb_info);
+	TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.suback_received);
 	mqtt_client->cb_info.suback_received = false;
 
 	packet_id++;
@@ -187,5 +187,4 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	TCPConnectionRaw_write_and_output(&mqtt_client->tcp_connection_raw, disconnect_msg, 2);
 	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
 	mqtt_client->cb_info.mqtt_connected = false;
-
 }

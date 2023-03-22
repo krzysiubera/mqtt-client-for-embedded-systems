@@ -129,6 +129,8 @@ int main(void)
   MQTTClient_subscribe(&mqtt_client, "drive/voltage");
   MQTTClient_subscribe(&mqtt_client, "drive/current");
 
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", MQTT_QOS_2, false);
+
 
   /* USER CODE END 2 */
 

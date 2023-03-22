@@ -7,36 +7,11 @@
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
-void TCPConnectionRaw_wait_until_mqtt_connected(struct mqtt_cb_info_t* cb_info)
+void TCPConnectionRaw_wait_for_condition(bool* condition)
 {
-	while (!cb_info->mqtt_connected)
+	while (!(*condition))
 		MX_LWIP_Process();
 }
-
-void TCPConnectionRaw_wait_for_suback(struct mqtt_cb_info_t* cb_info)
-{
-	while (!cb_info->suback_received)
-		MX_LWIP_Process();
-}
-
-void TCPConnectionRaw_wait_for_puback(struct mqtt_cb_info_t* cb_info)
-{
-	while (!cb_info->puback_received)
-		MX_LWIP_Process();
-}
-
-void TCPConnectionRaw_wait_for_pubrec(struct mqtt_cb_info_t* cb_info)
-{
-	while (!cb_info->pubrec_received)
-		MX_LWIP_Process();
-}
-
-void TCPConnectionRaw_wait_for_pubcomp(struct mqtt_cb_info_t* cb_info)
-{
-	while (!cb_info->pubcomp_received)
-		MX_LWIP_Process();
-}
-
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
