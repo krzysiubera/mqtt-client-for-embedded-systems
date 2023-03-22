@@ -94,12 +94,16 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 	if (!mqtt_client->cb_info.mqtt_connected)
 		return;
 
-	uint8_t remaining_len = 2 + strlen(topic) + 2 + strlen(msg);
+	uint8_t remaining_len = 2 + strlen(topic) + strlen(msg);
+	if (qos != MQTT_QOS_0)
+		remaining_len += 2;
+
 	uint8_t fixed_header[2] = {(MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain), remaining_len};
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, fixed_header, 2);
 
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
-	send_u16(&mqtt_client->tcp_connection_raw, packet_id);
+	if (qos != MQTT_QOS_0)
+		send_u16(&mqtt_client->tcp_connection_raw, packet_id);
 
 	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
