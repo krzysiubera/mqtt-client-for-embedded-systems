@@ -109,6 +109,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+	mqtt_client->cb_info.last_packet_id = packet_id;
 
 	if (qos == MQTT_QOS_0)
 	{

@@ -77,17 +77,32 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		}
 		case MQTT_PUBACK_PACKET:
 		{
-			cb_info->puback_received = true;
+			if (mqtt_data[1] == 2)
+			{
+				uint16_t received_packet_id = (mqtt_data[2] << 3) + mqtt_data[3];
+				if (received_packet_id == cb_info->last_packet_id)
+					cb_info->puback_received = true;
+			}
 			break;
 		}
 		case MQTT_PUBREC_PACKET:
 		{
-			cb_info->pubrec_received = true;
+			if (mqtt_data[1] == 2)
+			{
+				uint16_t received_packet_id = (mqtt_data[2] << 3) + mqtt_data[3];
+				if (received_packet_id == cb_info->last_packet_id)
+					cb_info->pubrec_received = true;
+			}
 			break;
 		}
 		case MQTT_PUBCOMP_PACKET:
 		{
-			cb_info->pubcomp_received = true;
+			if (mqtt_data[1] == 2)
+			{
+				uint16_t received_packet_id = (mqtt_data[2] << 3) + mqtt_data[3];
+				if (received_packet_id == cb_info->last_packet_id)
+					cb_info->pubcomp_received = true;
+			}
 			break;
 		}
 

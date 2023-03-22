@@ -127,6 +127,7 @@ int main(void)
   MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", MQTT_QOS_2, false);
   HAL_Delay(2000);
   MQTTClient_subscribe(&mqtt_client, "drive/voltage");
+  MQTTClient_subscribe(&mqtt_client, "drive/current");
 
 
   /* USER CODE END 2 */
