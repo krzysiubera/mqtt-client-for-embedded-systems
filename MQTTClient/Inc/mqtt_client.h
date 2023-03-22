@@ -6,13 +6,6 @@
 
 typedef uint32_t (*elapsed_time_cb_t)();
 
-enum mqtt_qos_t
-{
-	MQTT_QOS_0 = 0,
-	MQTT_QOS_1 = 1,
-	MQTT_QOS_2 = 2,
-};
-
 struct mqtt_client_connect_opts_t
 {
 	char* client_id;			// required - must not be null
@@ -21,7 +14,7 @@ struct mqtt_client_connect_opts_t
 
 	char* will_topic;			// can be null
 	char* will_msg;				// if will_topic is not null, then will_msg must not be null
-	enum mqtt_qos_t will_qos;	// must be 0 if will_topic is null
+	uint8_t will_qos;	// must be 0 if will_topic is null
 	bool will_retain;			// must be false if will_topic is null
 };
 
@@ -40,8 +33,8 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
-void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, enum mqtt_qos_t qos, bool retain);
-void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic);
+void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain);
+void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
 void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
 

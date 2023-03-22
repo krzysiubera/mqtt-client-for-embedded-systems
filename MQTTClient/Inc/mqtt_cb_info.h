@@ -14,6 +14,7 @@ struct mqtt_cb_info_t
 	bool pubrec_received;
 	bool pubcomp_received;
 	uint16_t last_packet_id;
+	uint8_t last_qos_subscribed;
 	msg_received_cb_t msg_received_cb;
 };
 

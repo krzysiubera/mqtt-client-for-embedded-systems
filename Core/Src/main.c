@@ -113,23 +113,23 @@ int main(void)
   conn_opts.password = "pass";
   conn_opts.will_topic = "info/device";
   conn_opts.will_msg = "stm disc";
-  conn_opts.will_qos = MQTT_QOS_0;
+  conn_opts.will_qos = 0;
   conn_opts.will_retain = false;
 
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   MQTTClient_connect(&mqtt_client);
-  HAL_Delay(2000);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", MQTT_QOS_0, false);
-  HAL_Delay(2000);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", MQTT_QOS_1, false);
-  HAL_Delay(2000);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", MQTT_QOS_2, false);
-  HAL_Delay(2000);
-  MQTTClient_subscribe(&mqtt_client, "drive/voltage");
-  MQTTClient_subscribe(&mqtt_client, "drive/current");
 
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", MQTT_QOS_2, false);
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", 2, false);
+
+
+  MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
+  MQTTClient_subscribe(&mqtt_client, "drive/current", 1);
+  MQTTClient_subscribe(&mqtt_client, "drive/power", 2);
+
+  MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", 2, false);
 
 
   /* USER CODE END 2 */

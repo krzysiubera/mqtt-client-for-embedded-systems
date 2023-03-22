@@ -35,7 +35,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		case MQTT_SUBACK_PACKET:
 		{
 			enum mqtt_suback_rc_t suback_rc = mqtt_data[4];
-			if (suback_rc == SUBACK_MAX_QOS_0)
+			if (suback_rc == cb_info->last_qos_subscribed)
 			{
 				cb_info->suback_received = true;
 			}
