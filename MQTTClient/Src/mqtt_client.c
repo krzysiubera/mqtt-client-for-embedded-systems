@@ -12,6 +12,19 @@ static uint8_t protocol_version = 0x04;
 
 static uint16_t packet_id = 0;
 
+uint8_t encode_remaining_len(uint8_t* buf, uint32_t remaining_len)
+{
+	uint8_t num_encoded_chars = 0;
+	do
+	{
+		uint8_t d = remaining_len % 128;
+		remaining_len /= 128;
+		if (remaining_len > 0)
+			d |= 0x80;
+		buf[num_encoded_chars++] = d;
+	} while (remaining_len > 0);
+	return num_encoded_chars;
+}
 
 static void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
 {
@@ -34,9 +47,14 @@ static void send_u8(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* va
 	TCPConnectionRaw_write(tcp_connection_raw, val, 1);
 }
 
-static void send_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* fixed_header)
+static void send_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t ctrl_field, uint32_t remaining_len)
 {
-	TCPConnectionRaw_write(tcp_connection_raw, fixed_header, 2);
+	uint8_t remaining_len_encoded[4];
+	memset(remaining_len_encoded, 0, 4);
+	uint8_t size_remaining_len_field = encode_remaining_len(remaining_len_encoded, remaining_len);
+
+	TCPConnectionRaw_write(tcp_connection_raw, &ctrl_field, 1);
+	TCPConnectionRaw_write(tcp_connection_raw, remaining_len_encoded, size_remaining_len_field);
 }
 
 
@@ -66,7 +84,7 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	uint16_t username_len = (mqtt_client->conn_opts->username != NULL) ? strlen(mqtt_client->conn_opts->username) : 0;
 	uint16_t password_len = (mqtt_client->conn_opts->password != NULL) ? strlen(mqtt_client->conn_opts->password) : 0;
 
-	uint8_t remaining_len = 10 + 2 + client_id_len;
+	uint32_t remaining_len = 10 + 2 + client_id_len;
 	remaining_len += ((will_topic_len > 0) ? (2 + will_topic_len) : 0);
 	remaining_len += ((will_msg_len > 0) ? (2 + will_msg_len) : 0);
 	remaining_len += ((username_len > 0) ? (2 + username_len) : 0);
@@ -77,8 +95,8 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 
 	// fix around: https://stackoverflow.com/questions/3025050/error-initializer-element-is-not-constant-when-trying-to-initialize-variable-w
 	uint16_t ka = (uint16_t) keepalive_sec;
-	uint8_t fixed_header[2] = {MQTT_CONNECT_PACKET, remaining_len};
-	send_fixed_header(&mqtt_client->tcp_connection_raw, fixed_header);
+	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
+	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
 	send_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
 	send_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
@@ -106,12 +124,12 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 	if (!mqtt_client->cb_info.mqtt_connected)
 		return;
 
-	uint8_t remaining_len = 2 + strlen(topic) + strlen(msg);
+	uint32_t remaining_len = 2 + strlen(topic) + strlen(msg);
 	if (qos != 0)
 		remaining_len += 2;
 
-	uint8_t fixed_header[2] = {(MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain), remaining_len};
-	send_fixed_header(&mqtt_client->tcp_connection_raw, fixed_header);
+	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain);
+	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
 	if (qos != 0)
@@ -137,9 +155,8 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.pubrec_received);
 		mqtt_client->cb_info.pubrec_received = false;
 
-		// send pubrel
-		uint8_t pubrel_fixed_header[2] = {(MQTT_PUBREL_PACKET | 0x02), 0x02};
-		send_fixed_header(&mqtt_client->tcp_connection_raw, pubrel_fixed_header);
+		uint8_t ctrl_field = (MQTT_PUBREL_PACKET | 0x02);
+		send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, 2);
 		send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
 
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
@@ -157,9 +174,9 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_
 	if (!mqtt_client->cb_info.mqtt_connected)
 		return;
 
-	uint8_t remaining_len = 2 + 2 + strlen(topic) + 1;
-	uint8_t fixed_header[2] = {(MQTT_SUBSCRIBE_PACKET | 0x02), remaining_len};
-	send_fixed_header(&mqtt_client->tcp_connection_raw, fixed_header);
+	uint32_t remaining_len = 2 + 2 + strlen(topic) + 1;
+	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
+	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 
 	send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
@@ -180,8 +197,7 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	uint32_t current_time = mqtt_client->elapsed_time_cb();
 	if ((current_time - mqtt_client->last_activity >= keepalive_ms) && (mqtt_client->cb_info.mqtt_connected))
 	{
-		uint8_t pingreq_msg[] = {MQTT_PINGREQ_PACKET, 0x00};
-		send_fixed_header(&mqtt_client->tcp_connection_raw, pingreq_msg);
+		send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_PINGREQ_PACKET, 0);
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 	}
@@ -192,8 +208,7 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	if (!mqtt_client->cb_info.mqtt_connected)
 		return;
 
-	uint8_t disconnect_msg[] = {MQTT_DISCONNECT_PACKET, 0x00};
-	send_fixed_header(&mqtt_client->tcp_connection_raw, disconnect_msg);
+	send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_DISCONNECT_PACKET, 0);
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
 	mqtt_client->cb_info.mqtt_connected = false;

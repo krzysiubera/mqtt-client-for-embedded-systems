@@ -26,7 +26,6 @@
 /* USER CODE BEGIN Includes */
 
 #include "mqtt_client.h"
-#include "swv_print.h"
 #include <string.h>
 #include <stdbool.h>
 /* USER CODE END Includes */
