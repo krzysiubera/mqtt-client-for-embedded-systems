@@ -28,6 +28,7 @@
 #include "mqtt_client.h"
 #include <string.h>
 #include <stdbool.h>
+#include "swv_print.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,7 +70,7 @@ void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data
 	memcpy(data_str, data, data_len);
 	data_str[data_len] = '\0';
 
-	printf("Topic: %s, Data: %s\n", topic_str, data_str);
+	printf("Topic: %s, Data: %s, Data len: %lu\n", topic_str, data_str, data_len);
 }
 
 /* USER CODE END 0 */
@@ -125,8 +126,6 @@ int main(void)
 
 
   MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
-  MQTTClient_subscribe(&mqtt_client, "drive/current", 1);
-  MQTTClient_subscribe(&mqtt_client, "drive/power", 2);
 
   MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", 2, false);
 

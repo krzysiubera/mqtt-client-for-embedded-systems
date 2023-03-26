@@ -7,6 +7,24 @@
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
+uint32_t get_digits_remaining_length(uint8_t* mqtt_data)
+{
+	uint32_t multiplier = 0;
+	uint32_t remaining_len = 0;
+	uint8_t encoded_byte;
+	uint8_t pos = 1;
+	do
+	{
+		encoded_byte = mqtt_data[pos];
+		remaining_len += (encoded_byte & 127) * multiplier;
+		multiplier *= 128;
+		pos++;
+	} while ((encoded_byte & 128) != 0);
+	pos--;
+	return pos;
+}
+
+
 void TCPConnectionRaw_wait_for_condition(bool* condition)
 {
 	while (!(*condition))
@@ -21,11 +39,15 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		tcp_recved(pcb, p->tot_len);
 		uint8_t* mqtt_data = (uint8_t*) p->payload;
 		enum mqtt_packet_type_t pkt_type = mqtt_data[0] & 0xF0;
+
+		// decode on how many digits is remaining length of the packet encoded
+		uint8_t digits_remaining_len = get_digits_remaining_length(mqtt_data);
+
 		switch (pkt_type)
 		{
 		case MQTT_CONNACK_PACKET:
 		{
-			enum mqtt_connection_rc_t conn_rc = mqtt_data[3];
+			enum mqtt_connection_rc_t conn_rc = mqtt_data[1 + digits_remaining_len + 1];
 			if (conn_rc == MQTT_CONNECTION_ACCEPTED)
 			{
 				cb_info->mqtt_connected = true;
@@ -34,7 +56,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		}
 		case MQTT_SUBACK_PACKET:
 		{
-			enum mqtt_suback_rc_t suback_rc = mqtt_data[4];
+			enum mqtt_suback_rc_t suback_rc = mqtt_data[1 + digits_remaining_len + 2];
 			if (suback_rc == cb_info->last_qos_subscribed)
 			{
 				cb_info->suback_received = true;
@@ -43,10 +65,10 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		}
 		case MQTT_PUBLISH_PACKET:
 		{
-			uint8_t* topic = mqtt_data + 4;
-			uint16_t topic_len = (mqtt_data[2] << 8) | mqtt_data[3];
-			uint8_t* data = mqtt_data + 2 + 2 + topic_len;
-			uint32_t data_len = p->tot_len - (2 + 2 + topic_len);
+			uint8_t* topic = mqtt_data + 1 + digits_remaining_len + 2;
+			uint16_t topic_len = ((mqtt_data[1 + digits_remaining_len] << 8)) | mqtt_data[1 + digits_remaining_len + 1];
+			uint8_t* data = mqtt_data + 1 + digits_remaining_len + 2 + topic_len;
+			uint32_t data_len = p->tot_len - (1 + digits_remaining_len + 2 + topic_len);
 			cb_info->msg_received_cb(topic, topic_len, data, data_len);
 			break;
 		}
