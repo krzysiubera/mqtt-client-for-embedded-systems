@@ -39,6 +39,7 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		tcp_recved(pcb, p->tot_len);
 		uint8_t* mqtt_data = (uint8_t*) p->payload;
 		enum mqtt_packet_type_t pkt_type = mqtt_data[0] & 0xF0;
+		uint8_t qos = (mqtt_data[0] >> 1) & 3;
 
 		// decode on how many digits is remaining length of the packet encoded
 		uint8_t digits_remaining_len = get_digits_remaining_length(mqtt_data);
@@ -67,8 +68,9 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		{
 			uint8_t* topic = mqtt_data + 1 + digits_remaining_len + 2;
 			uint16_t topic_len = ((mqtt_data[1 + digits_remaining_len] << 8)) | mqtt_data[1 + digits_remaining_len + 1];
-			uint8_t* data = mqtt_data + 1 + digits_remaining_len + 2 + topic_len;
-			uint32_t data_len = p->tot_len - (1 + digits_remaining_len + 2 + topic_len);
+			uint8_t pkt_id_len = (qos != 0) ? 2 : 0;
+			uint8_t* data = mqtt_data + 1 + digits_remaining_len + 2 + topic_len + pkt_id_len;
+			uint32_t data_len = p->tot_len - (1 + digits_remaining_len + 2 + topic_len + pkt_id_len);
 			cb_info->msg_received_cb(topic, topic_len, data, data_len);
 			break;
 		}

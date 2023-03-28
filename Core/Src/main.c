@@ -60,6 +60,9 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+uint8_t msgs_received = 0;
+uint8_t msg_sent = 0;
+
 void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len)
 {
 	uint8_t topic_str[topic_len + 1];
@@ -71,6 +74,7 @@ void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data
 	data_str[data_len] = '\0';
 
 	printf("Topic: %s, Data: %s, Data len: %lu\n", topic_str, data_str, data_len);
+	msgs_received++;
 }
 
 /* USER CODE END 0 */
@@ -116,7 +120,6 @@ int main(void)
   conn_opts.will_qos = 0;
   conn_opts.will_retain = false;
 
-
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   MQTTClient_connect(&mqtt_client);
 
@@ -126,6 +129,8 @@ int main(void)
 
 
   MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
+  MQTTClient_subscribe(&mqtt_client, "drive/current", 1);
+  MQTTClient_subscribe(&mqtt_client, "drive/power", 2);
 
   MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", 2, false);
 
@@ -141,6 +146,14 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  MQTTClient_keepalive(&mqtt_client);
 	  MX_LWIP_Process();
+
+	  if ((msgs_received == 6) && (msg_sent == 0))
+	  {
+		  MQTTClient_publish(&mqtt_client, "sensor/temp", "chuj", 2, false);
+		  msg_sent = 1;
+		  printf("Published in loop\n");
+	  }
+
   }
   /* USER CODE END 3 */
 }
