@@ -2,8 +2,17 @@
 #include "mqtt_packets.h"
 #include "mqtt_rc.h"
 
-static uint32_t get_digits_remaining_length(uint8_t* mqtt_data)
+struct remaining_len_info_t
 {
+	uint8_t num_digits;
+	uint32_t remaining_len;
+};
+
+
+static struct remaining_len_info_t get_digits_remaining_length(uint8_t* mqtt_data)
+{
+	static struct remaining_len_info_t rem_len_info;
+
 	uint32_t multiplier = 0;
 	uint32_t remaining_len = 0;
 	uint8_t encoded_byte;
@@ -16,7 +25,11 @@ static uint32_t get_digits_remaining_length(uint8_t* mqtt_data)
 		pos++;
 	} while ((encoded_byte & 128) != 0);
 	pos--;
-	return pos;
+
+	rem_len_info.num_digits = pos;
+	rem_len_info.remaining_len = remaining_len;
+
+	return rem_len_info;
 }
 
 
@@ -25,8 +38,9 @@ void deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_c
 	enum mqtt_packet_type_t pkt_type = mqtt_data[0] & 0xF0;
 	uint8_t qos = (mqtt_data[0] >> 1) & 3;
 
-	// decode on how many digits is remaining length of the packet encoded
-	uint8_t digits_remaining_len = get_digits_remaining_length(mqtt_data);
+	struct remaining_len_info_t rem_len_info = get_digits_remaining_length(mqtt_data);
+	uint8_t digits_remaining_len = rem_len_info.num_digits;
+	uint32_t remaining_len = rem_len_info.remaining_len;
 
 	switch (pkt_type)
 	{
