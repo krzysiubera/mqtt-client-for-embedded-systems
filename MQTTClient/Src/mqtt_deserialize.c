@@ -4,7 +4,7 @@
 
 struct remaining_len_info_t
 {
-	uint8_t num_digits;
+	uint32_t num_digits;
 	uint32_t remaining_len;
 };
 
@@ -13,7 +13,7 @@ static struct remaining_len_info_t get_digits_remaining_length(uint8_t* mqtt_dat
 {
 	static struct remaining_len_info_t rem_len_info;
 
-	uint32_t multiplier = 0;
+	uint32_t multiplier = 1;
 	uint32_t remaining_len = 0;
 	uint8_t encoded_byte;
 	uint8_t pos = 1;
@@ -39,7 +39,7 @@ void deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_c
 	uint8_t qos = (mqtt_data[0] >> 1) & 3;
 
 	struct remaining_len_info_t rem_len_info = get_digits_remaining_length(mqtt_data);
-	uint8_t digits_remaining_len = rem_len_info.num_digits;
+	uint32_t digits_remaining_len = rem_len_info.num_digits;
 	uint32_t remaining_len = rem_len_info.remaining_len;
 
 	switch (pkt_type)
@@ -65,11 +65,17 @@ void deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_c
 	case MQTT_PUBLISH_PACKET:
 	{
 		uint8_t* topic = mqtt_data + 1 + digits_remaining_len + 2;
-		uint16_t topic_len = ((mqtt_data[1 + digits_remaining_len] << 8)) | mqtt_data[1 + digits_remaining_len + 1];
-		uint8_t pkt_id_len = (qos != 0) ? 2 : 0;
+		uint32_t topic_len = ((mqtt_data[1 + digits_remaining_len] << 8)) | mqtt_data[1 + digits_remaining_len + 1];
+		uint32_t pkt_id_len = (qos != 0) ? 2 : 0;
 		uint8_t* data = mqtt_data + 1 + digits_remaining_len + 2 + topic_len + pkt_id_len;
-		uint32_t data_len = tot_len - (1 + digits_remaining_len + 2 + topic_len + pkt_id_len);
-		cb_info->msg_received_cb(topic, topic_len, data, data_len);
+
+
+		uint32_t data_len_expected = (remaining_len - 1 - digits_remaining_len - topic_len - pkt_id_len);
+		uint32_t data_len_in_buffer = tot_len - (1 + digits_remaining_len + 2 + topic_len + pkt_id_len);
+
+		if (data_len_expected == data_len_in_buffer)
+			cb_info->msg_received_cb(topic, topic_len, data, data_len_expected);
+
 		break;
 	}
 	case MQTT_PUBACK_PACKET:

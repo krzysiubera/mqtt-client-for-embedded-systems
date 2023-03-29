@@ -60,9 +60,6 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint8_t msgs_received = 0;
-uint8_t msg_sent = 0;
-
 void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len)
 {
 	uint8_t topic_str[topic_len + 1];
@@ -122,6 +119,7 @@ int main(void)
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   MQTTClient_connect(&mqtt_client);
+  printf("Connect success\n");
 
   MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
   MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
@@ -146,13 +144,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  MQTTClient_keepalive(&mqtt_client);
 	  MX_LWIP_Process();
-
-	  if ((msgs_received == 6) && (msg_sent == 0))
-	  {
-		  MQTTClient_publish(&mqtt_client, "sensor/temp", "chuj", 2, false);
-		  msg_sent = 1;
-		  printf("Published in loop\n");
-	  }
 
   }
   /* USER CODE END 3 */
