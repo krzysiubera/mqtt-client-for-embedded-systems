@@ -60,7 +60,7 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len)
+void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len, uint8_t qos)
 {
 	uint8_t topic_str[topic_len + 1];
 	memcpy(topic_str, topic, topic_len);
@@ -70,8 +70,7 @@ void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data
 	memcpy(data_str, data, data_len);
 	data_str[data_len] = '\0';
 
-	printf("Topic: %s, Data: %s, Data len: %lu\n", topic_str, data_str, data_len);
-	msgs_received++;
+	printf("Topic: %s, Data: %s, Data len: %lu, qos: %d\n", topic_str, data_str, data_len, qos);
 }
 
 /* USER CODE END 0 */
