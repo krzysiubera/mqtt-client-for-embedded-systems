@@ -33,7 +33,7 @@ static struct remaining_len_info_t get_digits_remaining_length(uint8_t* mqtt_dat
 }
 
 
-void deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_info_t* cb_info)
+uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_info_t* cb_info)
 {
 	enum mqtt_packet_type_t pkt_type = mqtt_data[0] & 0xF0;
 
@@ -67,16 +67,14 @@ void deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_c
 		uint8_t* topic = mqtt_data + 1 + digits_remaining_len + 2;
 		uint32_t topic_len = ((mqtt_data[1 + digits_remaining_len] << 8)) | mqtt_data[1 + digits_remaining_len + 1];
 		uint32_t pkt_id_len = (qos != 0) ? 2 : 0;
-		uint8_t* data = mqtt_data + 1 + digits_remaining_len + 2 + topic_len + pkt_id_len;
+		uint8_t* payload = mqtt_data + 1 + digits_remaining_len + 2 + topic_len + pkt_id_len;
+		uint32_t payload_len = (remaining_len - 1 - digits_remaining_len - topic_len - pkt_id_len);
 
+		cb_info->msg_received_cb(topic, topic_len, payload, payload_len, qos);
 
-		uint32_t data_len_expected = (remaining_len - 1 - digits_remaining_len - topic_len - pkt_id_len);
-		uint32_t data_len_in_buffer = tot_len - (1 + digits_remaining_len + 2 + topic_len + pkt_id_len);
+		// bytes left in buf
+		return (tot_len - 2) - remaining_len;
 
-		if (data_len_expected == data_len_in_buffer)
-			cb_info->msg_received_cb(topic, topic_len, data, data_len_expected, qos);
-
-		break;
 	}
 	case MQTT_PUBACK_PACKET:
 	{
@@ -112,4 +110,5 @@ void deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_c
 	default:
 		break;
 	}
+	return 0;
 }

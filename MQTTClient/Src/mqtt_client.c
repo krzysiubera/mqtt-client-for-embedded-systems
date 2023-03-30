@@ -6,7 +6,7 @@
 
 #define CLEAN_SESSION 1
 
-static const uint16_t keepalive_sec = 30;
+static const uint16_t keepalive_sec = 5000;
 static const uint32_t keepalive_ms = (uint32_t)keepalive_sec * 1000;
 static char* protocol_name = "MQTT";
 static uint8_t protocol_version = 0x04;

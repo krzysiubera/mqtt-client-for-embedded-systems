@@ -19,8 +19,13 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 	{
 		tcp_recved(pcb, p->tot_len);
 		uint8_t* mqtt_data = (uint8_t*) p->payload;
-		deserialize_mqtt_packet(mqtt_data, p->tot_len, cb_info);
 
+		uint32_t bytes_left = deserialize_mqtt_packet(mqtt_data, p->tot_len, cb_info);
+		while (bytes_left != 0)
+		{
+			uint32_t offset = p->tot_len - bytes_left;
+			bytes_left = deserialize_mqtt_packet(mqtt_data + offset, bytes_left, cb_info);
+		}
 	}
 	else
 	{

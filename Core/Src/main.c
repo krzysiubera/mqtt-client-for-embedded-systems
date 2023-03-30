@@ -70,7 +70,7 @@ void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data
 	memcpy(data_str, data, data_len);
 	data_str[data_len] = '\0';
 
-	printf("Topic: %s, Data: %s, Data len: %lu, qos: %d\n", topic_str, data_str, data_len, qos);
+	printf("msg:%s at:%s\n", data_str, topic_str);
 }
 
 /* USER CODE END 0 */
