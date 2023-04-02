@@ -73,6 +73,10 @@ void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data
 	printf("msg:%s at:%s\n", data_str, topic_str);
 }
 
+
+uint32_t current_time = 0;
+uint32_t previous_time = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -132,6 +136,7 @@ int main(void)
   MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", 2, false);
 
 
+  previous_time = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -141,8 +146,14 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  MQTTClient_keepalive(&mqtt_client);
-	  MX_LWIP_Process();
+	  MQTTClient_loop(&mqtt_client);
+
+	  current_time = HAL_GetTick();
+	  if (current_time - previous_time >= 5000)
+	  {
+		  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
+		  previous_time = current_time;
+	  }
 
   }
   /* USER CODE END 3 */

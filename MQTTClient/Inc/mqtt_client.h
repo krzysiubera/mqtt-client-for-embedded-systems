@@ -37,6 +37,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
 void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
+void MQTTClient_loop(struct mqtt_client_t* mqtt_client);
 
 
 #endif

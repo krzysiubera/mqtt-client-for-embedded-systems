@@ -17,5 +17,6 @@ void TCPConnectionRaw_write(struct tcp_connection_raw_t* tcp_connection_raw, uin
 void TCPConnectionRaw_output(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_close(struct tcp_connection_raw_t* tcp_connection_raw);
 void TCPConnectionRaw_wait_for_condition(bool* condition);
+void TCPConnectionRaw_process_lwip_packets();
 
 #endif

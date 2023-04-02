@@ -9,7 +9,7 @@
 void TCPConnectionRaw_wait_for_condition(bool* condition)
 {
 	while (!(*condition))
-		MX_LWIP_Process();
+		TCPConnectionRaw_process_lwip_packets();
 }
 
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
@@ -80,4 +80,9 @@ void TCPConnectionRaw_output(struct tcp_connection_raw_t* tcp_connection_raw)
 void TCPConnectionRaw_close(struct tcp_connection_raw_t* tcp_connection_raw)
 {
 	tcp_close(tcp_connection_raw->pcb);
+}
+
+void TCPConnectionRaw_process_lwip_packets()
+{
+	MX_LWIP_Process();
 }

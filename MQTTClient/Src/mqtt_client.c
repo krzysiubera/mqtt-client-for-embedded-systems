@@ -168,3 +168,9 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
 	mqtt_client->cb_info.mqtt_connected = false;
 }
+
+void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
+{
+	MQTTClient_keepalive(mqtt_client);
+	TCPConnectionRaw_process_lwip_packets();
+}
