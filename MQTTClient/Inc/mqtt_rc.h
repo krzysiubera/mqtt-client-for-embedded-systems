@@ -1,5 +1,5 @@
 #ifndef MQTT_RC_H
-#define MQTT_TC_H
+#define MQTT_RC_H
 
 enum mqtt_connection_rc_t
 {

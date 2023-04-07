@@ -51,22 +51,22 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	// fix around: https://stackoverflow.com/questions/3025050/error-initializer-element-is-not-constant-when-trying-to-initialize-variable-w
 	uint16_t ka = (uint16_t) keepalive_sec;
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
-	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
-	send_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
-	send_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
-	send_u16(&mqtt_client->tcp_connection_raw, &ka);
+	serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
+	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
+	serialize_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
+	serialize_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
+	serialize_u16(&mqtt_client->tcp_connection_raw, &ka);
 
 	// write payload
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
+	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
 	if (will_topic_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_topic, will_topic_len);
+		serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_topic, will_topic_len);
 	if (will_msg_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_msg, will_msg_len);
+		serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_msg, will_msg_len);
 	if (username_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->username, username_len);
+		serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->username, username_len);
 	if (password_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->password, password_len);
+		serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->password, password_len);
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
@@ -84,13 +84,13 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		remaining_len += 2;
 
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain);
-	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
+	serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
+	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
 	if (qos != 0)
-		send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+		serialize_u16(&mqtt_client->tcp_connection_raw, &packet_id);
 
-	TCPConnectionRaw_write(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
+	serialize_buffer(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
@@ -111,8 +111,8 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		mqtt_client->cb_info.pubrec_received = false;
 
 		uint8_t ctrl_field = (MQTT_PUBREL_PACKET | 0x02);
-		send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, 2);
-		send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+		serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, 2);
+		serialize_u16(&mqtt_client->tcp_connection_raw, &packet_id);
 
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
@@ -131,11 +131,11 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_
 
 	uint32_t remaining_len = 2 + 2 + strlen(topic) + 1;
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
-	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
+	serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 
-	send_u16(&mqtt_client->tcp_connection_raw, &packet_id);
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
-	send_u8(&mqtt_client->tcp_connection_raw, &qos);
+	serialize_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
+	serialize_u8(&mqtt_client->tcp_connection_raw, &qos);
 	mqtt_client->cb_info.last_qos_subscribed = qos;
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
@@ -152,7 +152,7 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	uint32_t current_time = mqtt_client->elapsed_time_cb();
 	if ((current_time - mqtt_client->last_activity >= keepalive_ms) && (mqtt_client->cb_info.mqtt_connected))
 	{
-		send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_PINGREQ_PACKET, 0);
+		serialize_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_PINGREQ_PACKET, 0);
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 	}
@@ -163,7 +163,7 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	if (!mqtt_client->cb_info.mqtt_connected)
 		return;
 
-	send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_DISCONNECT_PACKET, 0);
+	serialize_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_DISCONNECT_PACKET, 0);
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
 	mqtt_client->cb_info.mqtt_connected = false;
