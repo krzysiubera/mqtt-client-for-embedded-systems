@@ -149,7 +149,7 @@ int main(void)
 	  MQTTClient_loop(&mqtt_client);
 
 	  current_time = HAL_GetTick();
-	  if (current_time - previous_time >= 1000)
+	  if (current_time - previous_time >= 500)
 	  {
 		  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
 		  MQTTClient_publish(&mqtt_client, "sensor/magnet", "5 uT", 0, false);

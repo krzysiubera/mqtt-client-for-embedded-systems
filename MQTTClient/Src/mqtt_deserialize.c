@@ -80,7 +80,7 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 		if (mqtt_data[1] == 2)
 		{
-			uint16_t received_packet_id = (mqtt_data[2] << 3) + mqtt_data[3];
+			uint16_t received_packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
 			if (received_packet_id == cb_info->last_packet_id)
 				cb_info->puback_received = true;
 		}
@@ -90,7 +90,7 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 		if (mqtt_data[1] == 2)
 		{
-			uint16_t received_packet_id = (mqtt_data[2] << 3) + mqtt_data[3];
+			uint16_t received_packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
 			if (received_packet_id == cb_info->last_packet_id)
 				cb_info->pubrec_received = true;
 		}
@@ -100,7 +100,7 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 		if (mqtt_data[1] == 2)
 		{
-			uint16_t received_packet_id = (mqtt_data[2] << 3) + mqtt_data[3];
+			uint16_t received_packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
 			if (received_packet_id == cb_info->last_packet_id)
 				cb_info->pubcomp_received = true;
 		}
