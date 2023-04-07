@@ -13,6 +13,13 @@ static uint8_t protocol_version = 0x04;
 
 static uint16_t packet_id = 0;
 
+static void update_packet_id()
+{
+	packet_id++;
+	if (packet_id == 0)
+		packet_id = 1;
+}
+
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 msg_received_cb_t msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
@@ -121,7 +128,7 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		mqtt_client->cb_info.pubcomp_received = false;
 	}
 
-	packet_id++;
+	update_packet_id();
 }
 
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos)
@@ -144,7 +151,7 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_
 	TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.suback_received);
 	mqtt_client->cb_info.suback_received = false;
 
-	packet_id++;
+	update_packet_id();
 }
 
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
