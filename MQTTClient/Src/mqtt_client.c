@@ -11,13 +11,14 @@ static const uint32_t keepalive_ms = (uint32_t)keepalive_sec * 1000;
 static char* protocol_name = "MQTT";
 static uint8_t protocol_version = 0x04;
 
-static uint16_t packet_id = 0;
-
-static void update_packet_id()
+static void update_packet_id(uint16_t* last_packet_id)
 {
-	packet_id++;
-	if (packet_id == 0)
-		packet_id = 1;
+	if ((*last_packet_id) == 65535)
+	{
+		(*last_packet_id) = 1;
+		return;
+	}
+	(*last_packet_id)++;
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
@@ -28,6 +29,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->last_activity = 0;
 	mqtt_client->conn_opts = conn_opts;
+	mqtt_client->last_packet_id = 1;
 
 	MQTTCbInfo_init(&mqtt_client->cb_info, msg_received_cb);
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
@@ -95,13 +97,13 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 
 	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
 	if (qos != 0)
-		serialize_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+		serialize_u16(&mqtt_client->tcp_connection_raw, &mqtt_client->last_packet_id);
 
 	serialize_buffer(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
-	mqtt_client->cb_info.last_packet_id = packet_id;
+	mqtt_client->cb_info.last_packet_id = mqtt_client->last_packet_id;
 
 	if (qos == 0)
 	{
@@ -111,6 +113,8 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 	{
 		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.puback_received);
 		mqtt_client->cb_info.puback_received = false;
+
+		update_packet_id(&mqtt_client->last_packet_id);
 	}
 	else
 	{
@@ -119,16 +123,16 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 
 		uint8_t ctrl_field = (MQTT_PUBREL_PACKET | 0x02);
 		serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, 2);
-		serialize_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+		serialize_u16(&mqtt_client->tcp_connection_raw, &mqtt_client->last_packet_id);
 
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.pubcomp_received);
 		mqtt_client->cb_info.pubcomp_received = false;
-	}
 
-	update_packet_id();
+		update_packet_id(&mqtt_client->last_packet_id);
+	}
 }
 
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos)
@@ -140,7 +144,7 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
 	serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 
-	serialize_u16(&mqtt_client->tcp_connection_raw, &packet_id);
+	serialize_u16(&mqtt_client->tcp_connection_raw, &mqtt_client->last_packet_id);
 	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
 	serialize_u8(&mqtt_client->tcp_connection_raw, &qos);
 	mqtt_client->cb_info.last_qos_subscribed = qos;
@@ -151,7 +155,7 @@ void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_
 	TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.suback_received);
 	mqtt_client->cb_info.suback_received = false;
 
-	update_packet_id();
+	update_packet_id(&mqtt_client->last_packet_id);
 }
 
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
