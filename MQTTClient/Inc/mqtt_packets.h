@@ -1,6 +1,9 @@
 #ifndef MQTT_PACKETS_H
 #define MQTT_PACKETS_H
 
+#include <stdint.h>
+#include "mqtt_rc.h"
+
 enum mqtt_packet_type_t
 {
 	MQTT_CONNECT_PACKET = (1 << 4),
@@ -17,6 +20,18 @@ enum mqtt_packet_type_t
 	MQTT_PINGREQ_PACKET = (12 << 4),
 	MQTT_PINGRESP_PACKET = (13 << 4),
 	MQTT_DISCONNECT_PACKET = (14 << 4)
+};
+
+struct mqtt_header_t
+{
+	enum mqtt_packet_type_t packet_type;
+	uint32_t remaining_len;
+	uint8_t digits_remaining_len;
+};
+
+struct mqtt_connack_msg_t
+{
+	enum mqtt_connection_rc_t conn_rc;
 };
 
 #endif

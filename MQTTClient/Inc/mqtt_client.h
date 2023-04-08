@@ -27,11 +27,12 @@ struct mqtt_client_t
 	uint32_t last_activity;
 	struct mqtt_client_connect_opts_t* conn_opts;
 	uint16_t last_packet_id;
+	bool mqtt_connected;
 };
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
-		             msg_received_cb_t msg_received_cb,
-					 elapsed_time_cb_t elapsed_time_cb,
+					 msg_received_cb_t msg_received_cb,
+		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts);
 void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain);

@@ -3,12 +3,16 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "mqtt_packets.h"
 
 typedef void (*msg_received_cb_t)(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len, uint8_t qos);
 
 struct mqtt_cb_info_t
 {
-	bool mqtt_connected;
+
+	struct mqtt_connack_msg_t connack_msg;
+	bool connack_msg_available;
+
 	bool suback_received;
 	bool puback_received;
 	bool pubrec_received;
