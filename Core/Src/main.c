@@ -122,11 +122,13 @@ int main(void)
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
-  printf("Connected with return code: %d\n", connect_rc);
+  printf("Connected with rc: %d\n", connect_rc);
 
-  // MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
-  // MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
-  // MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", 2, false);
+  enum mqtt_client_err_t pub_rc[3];
+  pub_rc[0] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
+  pub_rc[1] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
+  pub_rc[2] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", 2, false);
+  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 
   enum mqtt_client_err_t sub_rc[3];
   sub_rc[0] = MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
@@ -153,10 +155,11 @@ int main(void)
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 10000)
 	  {
-		  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
-		  MQTTClient_publish(&mqtt_client, "sensor/magnet", "5 uT", 0, false);
-		  MQTTClient_publish(&mqtt_client, "sensor/acc", "5 g", 2, false);
+		  pub_rc[0] = MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
+		  pub_rc[1] = MQTTClient_publish(&mqtt_client, "sensor/magnet", "5 uT", 0, false);
+		  pub_rc[2] = MQTTClient_publish(&mqtt_client, "sensor/acc", "5 g", 2, false);
 		  previous_time = current_time;
+		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 	  }
 
   }

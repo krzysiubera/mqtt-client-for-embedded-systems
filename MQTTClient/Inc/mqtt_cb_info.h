@@ -16,11 +16,15 @@ struct mqtt_cb_info_t
 	struct mqtt_suback_msg_t suback_msg;
 	bool suback_msg_available;
 
-	bool puback_received;
-	bool pubrec_received;
-	bool pubcomp_received;
-	uint16_t last_packet_id;
-	uint8_t last_qos_subscribed;
+	struct mqtt_puback_msg_t puback_msg;
+	bool puback_msg_available;
+
+	struct mqtt_pubrec_msg_t pubrec_msg;
+	bool pubrec_msg_available;
+
+	struct mqtt_pubcomp_msg_t pubcomp_msg;
+	bool pubcomp_msg_available;
+
 	msg_received_cb_t msg_received_cb;
 };
 

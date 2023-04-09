@@ -9,11 +9,14 @@ void MQTTCbInfo_init(struct mqtt_cb_info_t* cb_info, msg_received_cb_t msg_recei
 	memset(&cb_info->suback_msg, 0, sizeof(cb_info->suback_msg));
 	cb_info->suback_msg_available = false;
 
+	memset(&cb_info->puback_msg, 0, sizeof(cb_info->puback_msg));
+	cb_info->puback_msg_available = false;
 
-	cb_info->puback_received = false;
-	cb_info->pubrec_received = false;
-	cb_info->pubcomp_received = false;
-	cb_info->last_packet_id = 0;
-	cb_info->last_qos_subscribed = 0;
+	memset(&cb_info->pubrec_msg, 0, sizeof(cb_info->pubrec_msg));
+	cb_info->pubrec_msg_available = false;
+
+	memset(&cb_info->pubcomp_msg, 0, sizeof(cb_info->pubcomp_msg));
+	cb_info->pubcomp_msg_available = false;
+
 	cb_info->msg_received_cb = msg_received_cb;
 }

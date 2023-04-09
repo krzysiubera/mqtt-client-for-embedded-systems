@@ -90,13 +90,13 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 
 	wait_for_condition(&mqtt_client->cb_info.connack_msg_available);
 	mqtt_client->mqtt_connected = (mqtt_client->cb_info.connack_msg.conn_rc == MQTT_CONNECTION_ACCEPTED);
-	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_NOT_CONNECTED;
+	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_CONNECT_FAILURE;
 }
 
-void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain)
+enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain)
 {
 	if (!mqtt_client->mqtt_connected)
-		return;
+		return MQTT_NOT_CONNECTED;
 
 	uint32_t remaining_len = 2 + strlen(topic) + strlen(msg);
 	if (qos != 0)
@@ -120,19 +120,18 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 
 	if (qos == 0)
 	{
-		// do nothing - fire and forget
+		return MQTT_SUCCESS;
 	}
 	else if (qos == 1)
 	{
-		mqtt_client->cb_info.last_packet_id = current_packet_id;
-		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.puback_received);
-		mqtt_client->cb_info.puback_received = false;
+		wait_for_condition(&mqtt_client->cb_info.puback_msg_available);
+		return (mqtt_client->cb_info.puback_msg.packet_id == current_packet_id) ? MQTT_SUCCESS : MQTT_PUBLISH_FAILURE;
 	}
 	else
 	{
-		mqtt_client->cb_info.last_packet_id = current_packet_id;
-		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.pubrec_received);
-		mqtt_client->cb_info.pubrec_received = false;
+		wait_for_condition(&mqtt_client->cb_info.pubrec_msg_available);
+		if (mqtt_client->cb_info.pubrec_msg.packet_id != current_packet_id)
+			return MQTT_PUBLISH_FAILURE;
 
 		uint8_t ctrl_field = (MQTT_PUBREL_PACKET | 0x02);
 		serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, 2);
@@ -141,8 +140,8 @@ void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* ms
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-		TCPConnectionRaw_wait_for_condition(&mqtt_client->cb_info.pubcomp_received);
-		mqtt_client->cb_info.pubcomp_received = false;
+		wait_for_condition(&mqtt_client->cb_info.pubcomp_msg_available);
+		return (mqtt_client->cb_info.pubcomp_msg.packet_id == current_packet_id) ? MQTT_SUCCESS : MQTT_PUBLISH_FAILURE;
 	}
 }
 

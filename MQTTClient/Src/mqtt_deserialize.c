@@ -44,19 +44,25 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 	case MQTT_CONNACK_PACKET:
 	{
-		struct mqtt_connack_msg_t connack_msg;
-		connack_msg.conn_rc = mqtt_data[1 + header.digits_remaining_len + 1];
-		cb_info->connack_msg = connack_msg;
-		cb_info->connack_msg_available = true;
+		if (header.remaining_len == 2)
+		{
+			struct mqtt_connack_msg_t connack_msg;
+			connack_msg.conn_rc = mqtt_data[3];
+			cb_info->connack_msg = connack_msg;
+			cb_info->connack_msg_available = true;
+		}
 		break;
 	}
 	case MQTT_SUBACK_PACKET:
 	{
-		struct mqtt_suback_msg_t suback_msg;
-		suback_msg.packet_id = (mqtt_data[1 + header.digits_remaining_len] << 8) | (mqtt_data[1 + header.digits_remaining_len + 1]);
-		suback_msg.suback_rc = mqtt_data[1 + header.digits_remaining_len + 2];
-		cb_info->suback_msg = suback_msg;
-		cb_info->suback_msg_available = true;
+		if (header.remaining_len == 3)
+		{
+			struct mqtt_suback_msg_t suback_msg;
+			suback_msg.packet_id = (mqtt_data[2] << 8) | (mqtt_data[3]);
+			suback_msg.suback_rc = mqtt_data[4];
+			cb_info->suback_msg = suback_msg;
+			cb_info->suback_msg_available = true;
+		}
 		break;
 	}
 	case MQTT_PUBLISH_PACKET:
@@ -78,9 +84,10 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 		if (header.remaining_len == 2)
 		{
-			uint16_t received_packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
-			if (received_packet_id == cb_info->last_packet_id)
-				cb_info->puback_received = true;
+			struct mqtt_puback_msg_t puback_msg;
+			puback_msg.packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
+			cb_info->puback_msg = puback_msg;
+			cb_info->puback_msg_available = true;
 		}
 		break;
 	}
@@ -88,9 +95,10 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 		if (header.remaining_len == 2)
 		{
-			uint16_t received_packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
-			if (received_packet_id == cb_info->last_packet_id)
-				cb_info->pubrec_received = true;
+			struct mqtt_pubrec_msg_t pubrec_msg;
+			pubrec_msg.packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
+			cb_info->pubrec_msg = pubrec_msg;
+			cb_info->pubrec_msg_available = true;
 		}
 		break;
 	}
@@ -98,9 +106,10 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	{
 		if (header.remaining_len == 2)
 		{
-			uint16_t received_packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
-			if (received_packet_id == cb_info->last_packet_id)
-				cb_info->pubcomp_received = true;
+			struct mqtt_pubcomp_msg_t pubcomp_msg;
+			pubcomp_msg.packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
+			cb_info->pubcomp_msg = pubcomp_msg;
+			cb_info->pubcomp_msg_available = true;
 		}
 		break;
 	}

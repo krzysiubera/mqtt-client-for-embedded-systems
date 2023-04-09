@@ -6,12 +6,6 @@
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
-void TCPConnectionRaw_wait_for_condition(bool* condition)
-{
-	while (!(*condition))
-		TCPConnectionRaw_process_lwip_packets();
-}
-
 static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t err)
 {
 	struct mqtt_cb_info_t* cb_info = arg;

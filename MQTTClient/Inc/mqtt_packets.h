@@ -40,4 +40,19 @@ struct mqtt_suback_msg_t
 	enum mqtt_suback_rc_t suback_rc;
 };
 
+struct mqtt_puback_msg_t
+{
+	uint16_t packet_id;
+};
+
+struct mqtt_pubrec_msg_t
+{
+	uint16_t packet_id;
+};
+
+struct mqtt_pubcomp_msg_t
+{
+	uint16_t packet_id;
+};
+
 #endif
