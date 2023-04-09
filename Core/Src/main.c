@@ -121,8 +121,8 @@ int main(void)
   conn_opts.will_retain = false;
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
-  MQTTClient_connect(&mqtt_client);
-  printf("Connect success\n");
+  enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
+  printf("Connected with return code: %d\n", connect_rc);
 
   MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
   MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);

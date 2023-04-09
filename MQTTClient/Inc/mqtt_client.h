@@ -6,6 +6,14 @@
 
 typedef uint32_t (*elapsed_time_cb_t)();
 
+enum mqtt_client_err_t
+{
+	MQTT_SUCCESS = 0,
+	MQTT_NOT_CONNECTED = 1,
+	MQTT_ALREADY_CONNECTED = 2
+};
+
+
 struct mqtt_client_connect_opts_t
 {
 	char* client_id;			// required - must not be null
@@ -34,7 +42,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 msg_received_cb_t msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts);
-void MQTTClient_connect(struct mqtt_client_t* mqtt_client);
+enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain);
 void MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);

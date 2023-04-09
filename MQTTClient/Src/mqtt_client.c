@@ -43,10 +43,10 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 
-void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
+enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 {
 	if (mqtt_client->mqtt_connected)
-		return;
+		return MQTT_ALREADY_CONNECTED;
 
 	TCPConnectionRaw_connect(&mqtt_client->tcp_connection_raw, &mqtt_client->cb_info);
 
@@ -90,7 +90,11 @@ void MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 
 	wait_for_connack_packet(&mqtt_client->cb_info);
 	if (mqtt_client->cb_info.connack_msg.conn_rc == MQTT_CONNECTION_ACCEPTED)
+	{
 		mqtt_client->mqtt_connected = true;
+		return MQTT_SUCCESS;
+	}
+	return MQTT_NOT_CONNECTED;
 }
 
 void MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain)
