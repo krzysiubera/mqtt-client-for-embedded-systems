@@ -13,7 +13,9 @@ struct mqtt_cb_info_t
 	struct mqtt_connack_msg_t connack_msg;
 	bool connack_msg_available;
 
-	bool suback_received;
+	struct mqtt_suback_msg_t suback_msg;
+	bool suback_msg_available;
+
 	bool puback_received;
 	bool pubrec_received;
 	bool pubcomp_received;

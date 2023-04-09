@@ -52,11 +52,11 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 	}
 	case MQTT_SUBACK_PACKET:
 	{
-		enum mqtt_suback_rc_t suback_rc = mqtt_data[1 + header.digits_remaining_len + 2];
-		if (suback_rc == cb_info->last_qos_subscribed)
-		{
-			cb_info->suback_received = true;
-		}
+		struct mqtt_suback_msg_t suback_msg;
+		suback_msg.packet_id = (mqtt_data[1 + header.digits_remaining_len] << 8) | (mqtt_data[1 + header.digits_remaining_len + 1]);
+		suback_msg.suback_rc = mqtt_data[1 + header.digits_remaining_len + 2];
+		cb_info->suback_msg = suback_msg;
+		cb_info->suback_msg_available = true;
 		break;
 	}
 	case MQTT_PUBLISH_PACKET:

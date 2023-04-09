@@ -34,4 +34,10 @@ struct mqtt_connack_msg_t
 	enum mqtt_connection_rc_t conn_rc;
 };
 
+struct mqtt_suback_msg_t
+{
+	uint16_t packet_id;
+	enum mqtt_suback_rc_t suback_rc;
+};
+
 #endif

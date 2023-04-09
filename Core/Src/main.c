@@ -124,14 +124,16 @@ int main(void)
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
   printf("Connected with return code: %d\n", connect_rc);
 
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", 2, false);
+  // MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
+  // MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
+  // MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", 2, false);
 
+  enum mqtt_client_err_t sub_rc[3];
+  sub_rc[0] = MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
+  sub_rc[1] = MQTTClient_subscribe(&mqtt_client, "drive/current", 1);
+  sub_rc[2] = MQTTClient_subscribe(&mqtt_client, "drive/power", 2);
+  printf("Subscribed with rc: %d, %d, %d\n", sub_rc[0], sub_rc[1], sub_rc[2]);
 
-  MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
-  MQTTClient_subscribe(&mqtt_client, "drive/current", 1);
-  MQTTClient_subscribe(&mqtt_client, "drive/power", 2);
 
   MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", 2, false);
 
@@ -153,6 +155,7 @@ int main(void)
 	  {
 		  MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
 		  MQTTClient_publish(&mqtt_client, "sensor/magnet", "5 uT", 0, false);
+		  MQTTClient_publish(&mqtt_client, "sensor/acc", "5 g", 2, false);
 		  previous_time = current_time;
 	  }
 
