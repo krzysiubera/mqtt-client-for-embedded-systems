@@ -6,8 +6,6 @@
 
 #define CLEAN_SESSION 1
 
-static const uint16_t keepalive_sec = 5000;
-static const uint32_t keepalive_ms = (uint32_t)keepalive_sec * 1000;
 static char* protocol_name = "MQTT";
 static uint8_t protocol_version = 0x04;
 
@@ -65,14 +63,12 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	uint8_t connect_flags = ((username_len > 0) << 7) |((password_len > 0) << 6) | (mqtt_client->conn_opts->will_retain << 5) |
 			                (mqtt_client->conn_opts->will_qos << 4) | ((will_msg_len > 0) << 2) | (CLEAN_SESSION << 1);
 
-	// fix around: https://stackoverflow.com/questions/3025050/error-initializer-element-is-not-constant-when-trying-to-initialize-variable-w
-	uint16_t ka = (uint16_t) keepalive_sec;
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
 	serialize_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
 	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
 	serialize_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
 	serialize_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
-	serialize_u16(&mqtt_client->tcp_connection_raw, &ka);
+	serialize_u16(&mqtt_client->tcp_connection_raw, &mqtt_client->conn_opts->keepalive_ms);
 
 	// write payload
 	serialize_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
@@ -170,7 +166,7 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, c
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 {
 	uint32_t current_time = mqtt_client->elapsed_time_cb();
-	if ((current_time - mqtt_client->last_activity >= keepalive_ms) && (mqtt_client->mqtt_connected))
+	if ((current_time - mqtt_client->last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
 	{
 		serialize_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_PINGREQ_PACKET, 0);
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);

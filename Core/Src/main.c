@@ -119,6 +119,7 @@ int main(void)
   conn_opts.will_msg = "stm disc";
   conn_opts.will_qos = 0;
   conn_opts.will_retain = false;
+  conn_opts.keepalive_ms = 5000;
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);

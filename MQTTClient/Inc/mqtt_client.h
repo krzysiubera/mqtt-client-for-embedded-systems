@@ -27,6 +27,7 @@ struct mqtt_client_connect_opts_t
 	char* will_msg;				// if will_topic is not null, then will_msg must not be null
 	uint8_t will_qos;			// must be 0 if will_topic is null
 	bool will_retain;			// must be false if will_topic is null
+	uint16_t keepalive_ms;		// required
 };
 
 
