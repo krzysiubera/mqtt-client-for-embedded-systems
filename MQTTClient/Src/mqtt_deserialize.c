@@ -72,12 +72,12 @@ uint32_t deserialize_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mq
 		uint32_t topic_len = ((mqtt_data[1 + header.digits_remaining_len] << 8)) | mqtt_data[1 + header.digits_remaining_len + 1];
 		uint32_t pkt_id_len = (qos != 0) ? 2 : 0;
 		uint8_t* payload = mqtt_data + 1 + header.digits_remaining_len + 2 + topic_len + pkt_id_len;
-		uint32_t payload_len = (header.remaining_len - 1 - header.digits_remaining_len - topic_len - pkt_id_len);
+		uint32_t payload_len = (header.remaining_len - 2 - topic_len - pkt_id_len);
 
 		cb_info->msg_received_cb(topic, topic_len, payload, payload_len, qos);
 
 		// bytes left in buf
-		return (tot_len - 2) - header.remaining_len;
+		return (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
 
 	}
 	case MQTT_PUBACK_PACKET:
