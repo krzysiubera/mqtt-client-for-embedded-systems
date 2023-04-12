@@ -1,4 +1,4 @@
-#include "mqtt_serialize.h"
+#include "mqtt_send.h"
 #include <string.h>
 
 static uint8_t encode_remaining_len(uint8_t* buf, uint32_t remaining_len)
@@ -15,7 +15,7 @@ static uint8_t encode_remaining_len(uint8_t* buf, uint32_t remaining_len)
 	return num_encoded_chars;
 }
 
-void serialize_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
+void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
 {
 	uint8_t str_len_encoded[2];
 	str_len_encoded[0] = (len >> 8) & 0xFF;
@@ -24,19 +24,19 @@ void serialize_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw,
 	TCPConnectionRaw_write(tcp_connection_raw, msg, len);
 }
 
-void serialize_u16(struct tcp_connection_raw_t* tcp_connection_raw, uint16_t* val)
+void send_u16(struct tcp_connection_raw_t* tcp_connection_raw, uint16_t* val)
 {
 	uint16_t len = *val;
 	uint8_t u16_as_bytes[2] = {(len >> 8) & 0xFF, (len & 0xFF)};
 	TCPConnectionRaw_write(tcp_connection_raw, u16_as_bytes, 2);
 }
 
-void serialize_u8(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* val)
+void send_u8(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* val)
 {
 	TCPConnectionRaw_write(tcp_connection_raw, val, 1);
 }
 
-void serialize_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t ctrl_field, uint32_t remaining_len)
+void send_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t ctrl_field, uint32_t remaining_len)
 {
 	uint8_t remaining_len_encoded[4];
 	memset(remaining_len_encoded, 0, 4);
@@ -46,7 +46,7 @@ void serialize_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uin
 	TCPConnectionRaw_write(tcp_connection_raw, remaining_len_encoded, size_remaining_len_field);
 }
 
-void serialize_buffer(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* buffer, uint16_t len)
+void send_buffer(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* buffer, uint16_t len)
 {
 	TCPConnectionRaw_write(tcp_connection_raw, buffer, len);
 }

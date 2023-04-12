@@ -2,7 +2,7 @@
 #include "lwip/ip.h"
 #include "lwip.h"
 #include "mqtt_cb_info.h"
-#include "mqtt_deserialize.h"
+#include "mqtt_receive.h"
 
 #define TCP_CONNECTION_RAW_PORT 1883
 
@@ -12,13 +12,14 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 	if (err == ERR_OK && p != NULL)
 	{
 		tcp_recved(pcb, p->tot_len);
-		uint8_t* mqtt_data = (uint8_t*) p->payload;
+		cb_info->mqtt_payload = (uint8_t*) p->payload;
+		cb_info->mqtt_msg_len = p->tot_len;
 
-		uint32_t bytes_left = deserialize_mqtt_packet(mqtt_data, p->tot_len, cb_info);
+		uint32_t bytes_left = get_mqtt_packet(cb_info->mqtt_payload, cb_info->mqtt_msg_len, cb_info);
 		while (bytes_left != 0)
 		{
 			uint32_t offset = p->tot_len - bytes_left;
-			bytes_left = deserialize_mqtt_packet(mqtt_data + offset, bytes_left, cb_info);
+			bytes_left = get_mqtt_packet(cb_info->mqtt_payload + offset, bytes_left, cb_info);
 		}
 	}
 	else

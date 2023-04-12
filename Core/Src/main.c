@@ -119,7 +119,7 @@ int main(void)
   conn_opts.will_msg = "stm disc";
   conn_opts.will_qos = 0;
   conn_opts.will_retain = false;
-  conn_opts.keepalive_ms = 5000;
+  conn_opts.keepalive_ms = 10000;
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
@@ -153,7 +153,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  MQTTClient_loop(&mqtt_client);
 
-	  /*
+
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 10000)
 	  {
@@ -163,7 +163,7 @@ int main(void)
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 	  }
-	  */
+
 
   }
   /* USER CODE END 3 */
