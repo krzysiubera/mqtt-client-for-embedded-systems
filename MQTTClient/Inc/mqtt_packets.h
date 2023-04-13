@@ -26,6 +26,7 @@ enum mqtt_packet_type_t
 struct mqtt_header_t
 {
 	enum mqtt_packet_type_t packet_type;
+	uint8_t flags;
 	uint32_t remaining_len;
 	uint8_t digits_remaining_len;
 };
