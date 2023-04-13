@@ -76,6 +76,25 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 		if (rc == MQTT_SUCCESS)
 		{
 			cb_info->msg_received_cb(&publish_resp);
+
+
+			if (publish_resp.qos == 0)
+			{
+				// do nothing
+			}
+			else if (publish_resp.qos == 1)
+			{
+				// send puback
+				uint8_t header[2] = {MQTT_PUBACK_PACKET, 2};
+				uint8_t pkt_id_encoded[2] = {(publish_resp.packet_id >> 8) & 0xFF, (publish_resp.packet_id & 0xFF)};
+				tcp_write(active_pcb, (void*) header, 2, 1);
+				tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
+				tcp_output(active_pcb);
+
+				cb_info->last_activity = cb_info->elapsed_time_cb();
+			}
+
+
 		}
 
 
