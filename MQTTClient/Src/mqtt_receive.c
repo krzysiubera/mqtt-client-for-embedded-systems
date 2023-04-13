@@ -93,6 +93,20 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 
 				cb_info->last_activity = cb_info->elapsed_time_cb();
 			}
+			else if (publish_resp.qos == 2)
+			{
+				// send pubrec
+				uint8_t header[2] = {MQTT_PUBREC_PACKET, 2};
+				uint8_t pkt_id_encoded[2] = {(publish_resp.packet_id >> 8) & 0xFF, (publish_resp.packet_id & 0xFF)};
+				tcp_write(active_pcb, (void*) header, 2, 1);
+				tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
+				tcp_output(active_pcb);
+
+				cb_info->last_activity = cb_info->elapsed_time_cb();
+
+				// put to queue request for PUBREL
+
+			}
 
 
 		}
@@ -100,6 +114,25 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 
 		// bytes left in buf
 		return (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
+	}
+	case MQTT_PUBREL_PACKET:
+	{
+		struct mqtt_pubrel_resp_t pubrel_resp;
+		enum mqtt_client_err_t rc = decode_pubrel_resp(mqtt_data, &header, &pubrel_resp);
+		if (rc == MQTT_SUCCESS)
+		{
+			// check if PUBREL msg in queue - if it is, send PUBCOMP with the same message ID
+
+			uint8_t header[2] = {MQTT_PUBCOMP_PACKET, 2};
+			uint8_t pkt_id_encoded[2] = {(pubrel_resp.packet_id >> 8) & 0xFF, (pubrel_resp.packet_id & 0xFF)};
+			tcp_write(active_pcb, (void*) header, 2, 1);
+			tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
+			tcp_output(active_pcb);
+
+			cb_info->last_activity = cb_info->elapsed_time_cb();
+
+		}
+		return (tot_len - 1 - header.digits_remaining_len) - PUBREL_RESP_LEN;
 	}
 
 	default:

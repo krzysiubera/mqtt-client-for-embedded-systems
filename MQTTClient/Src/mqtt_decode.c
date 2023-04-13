@@ -103,3 +103,12 @@ enum mqtt_client_err_t decode_publish_resp(uint8_t* mqtt_data, struct mqtt_heade
 
 	return MQTT_SUCCESS;
 }
+
+enum mqtt_client_err_t decode_pubrel_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_pubrel_resp_t* pubrel_resp)
+{
+	if (header->remaining_len != PUBREL_RESP_LEN)
+		return MQTT_INVALID_MSG;
+
+	pubrel_resp->packet_id = (mqtt_data[2] << 8) | (mqtt_data[3]);
+	return MQTT_SUCCESS;
+}

@@ -67,4 +67,9 @@ struct mqtt_publish_resp_t
 	uint8_t qos;
 };
 
+struct mqtt_pubrel_resp_t
+{
+	uint16_t packet_id;
+};
+
 #endif
