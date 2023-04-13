@@ -75,6 +75,11 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 		uint8_t* topic = mqtt_data + 1 + header.digits_remaining_len + 2;
 		uint32_t topic_len = ((mqtt_data[1 + header.digits_remaining_len] << 8)) | mqtt_data[1 + header.digits_remaining_len + 1];
 		uint32_t pkt_id_len = (qos != 0) ? 2 : 0;
+
+		uint16_t pkt_id = 0;
+		if (pkt_id_len != 0)
+			pkt_id = (mqtt_data[1 + header.digits_remaining_len + 2 + topic_len] << 8) | (mqtt_data[1 + header.digits_remaining_len + 2 + topic_len + 1]);
+
 		uint8_t* payload = mqtt_data + 1 + header.digits_remaining_len + 2 + topic_len + pkt_id_len;
 		uint32_t payload_len = (header.remaining_len - 2 - topic_len - pkt_id_len);
 
