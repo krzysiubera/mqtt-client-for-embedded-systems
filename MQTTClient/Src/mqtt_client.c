@@ -66,7 +66,9 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
 	send_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
 	send_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
-	send_u16(&mqtt_client->tcp_connection_raw, &mqtt_client->conn_opts->keepalive_ms);
+
+	uint16_t keepalive_seconds = mqtt_client->conn_opts->keepalive_ms / 1000;
+	send_u16(&mqtt_client->tcp_connection_raw, &keepalive_seconds);
 
 	// write payload
 	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);

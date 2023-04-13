@@ -17,6 +17,7 @@ enum mqtt_client_err_t decode_puback_resp(uint8_t* mqtt_data, struct mqtt_header
 enum mqtt_client_err_t decode_pubrec_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_pubrec_resp_t* pubrec_resp);
 enum mqtt_client_err_t decode_pubcomp_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_pubcomp_resp_t* pubcomp_resp);
 enum mqtt_client_err_t decode_suback_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_suback_resp_t* suback_resp);
+enum mqtt_client_err_t decode_publish_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_publish_resp_t* publish_resp);
 
 
 

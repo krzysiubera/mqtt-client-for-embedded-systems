@@ -85,3 +85,21 @@ enum mqtt_client_err_t decode_suback_resp(uint8_t* mqtt_data, struct mqtt_header
 	suback_resp->suback_rc = mqtt_data[4];
 	return MQTT_SUCCESS;
 }
+
+enum mqtt_client_err_t decode_publish_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_publish_resp_t* publish_resp)
+{
+	publish_resp->qos = (mqtt_data[0] & 0x06) >> 1;
+
+	publish_resp->topic = mqtt_data + 1 + header->digits_remaining_len + 2;
+	publish_resp->topic_len = ((mqtt_data[1 + header->digits_remaining_len] << 8)) | mqtt_data[1 + header->digits_remaining_len + 1];
+
+	uint32_t pkt_id_len = (publish_resp->qos != 0) ? 2 : 0;
+	publish_resp->packet_id = 0;
+	if (pkt_id_len != 0)
+		publish_resp->packet_id = (mqtt_data[1 + header->digits_remaining_len + 2 + publish_resp->topic_len] << 8) | (mqtt_data[1 + header->digits_remaining_len + 2 + publish_resp->topic_len + 1]);
+
+	publish_resp->data = mqtt_data + 1 + header->digits_remaining_len + 2 + publish_resp->topic_len + pkt_id_len;
+	publish_resp->data_len = (header->remaining_len - 2 - publish_resp->topic_len - pkt_id_len);
+
+	return MQTT_SUCCESS;
+}

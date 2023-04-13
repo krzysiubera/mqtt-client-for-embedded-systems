@@ -57,4 +57,14 @@ struct mqtt_suback_resp_t
 	enum mqtt_suback_rc_t suback_rc;
 };
 
+struct mqtt_publish_resp_t
+{
+	uint8_t* topic;
+	uint16_t topic_len;
+	uint8_t* data;
+	uint16_t data_len;
+	uint16_t packet_id;
+	uint8_t qos;
+};
+
 #endif

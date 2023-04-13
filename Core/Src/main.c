@@ -60,15 +60,15 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void mqtt_msg_received_user_cb(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len, uint8_t qos)
+void mqtt_msg_received_user_cb(struct mqtt_publish_resp_t* publish_resp)
 {
-	uint8_t topic_str[topic_len + 1];
-	memcpy(topic_str, topic, topic_len);
-	topic_str[topic_len] = '\0';
+	uint8_t topic_str[publish_resp->topic_len + 1];
+	memcpy(topic_str, publish_resp->topic, publish_resp->topic_len);
+	topic_str[publish_resp->topic_len] = '\0';
 
-	uint8_t data_str[data_len + 1];
-	memcpy(data_str, data, data_len);
-	data_str[data_len] = '\0';
+	uint8_t data_str[publish_resp->data_len + 1];
+	memcpy(data_str, publish_resp->data, publish_resp->data_len);
+	data_str[publish_resp->data_len] = '\0';
 
 	printf("msg:%s at:%s\n", data_str, topic_str);
 }
@@ -119,7 +119,7 @@ int main(void)
   conn_opts.will_msg = "stm disc";
   conn_opts.will_qos = 0;
   conn_opts.will_retain = false;
-  conn_opts.keepalive_ms = 50000;
+  conn_opts.keepalive_ms = 300000;  // 300000 ms is 5 minutes
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);

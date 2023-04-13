@@ -71,23 +71,16 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 	}
 	case MQTT_PUBLISH_PACKET:
 	{
-		uint8_t qos = (mqtt_data[0] & 0x06) >> 1;
-		uint8_t* topic = mqtt_data + 1 + header.digits_remaining_len + 2;
-		uint32_t topic_len = ((mqtt_data[1 + header.digits_remaining_len] << 8)) | mqtt_data[1 + header.digits_remaining_len + 1];
-		uint32_t pkt_id_len = (qos != 0) ? 2 : 0;
+		struct mqtt_publish_resp_t publish_resp;
+		enum mqtt_client_err_t rc = decode_publish_resp(mqtt_data, &header, &publish_resp);
+		if (rc == MQTT_SUCCESS)
+		{
+			cb_info->msg_received_cb(&publish_resp);
+		}
 
-		uint16_t pkt_id = 0;
-		if (pkt_id_len != 0)
-			pkt_id = (mqtt_data[1 + header.digits_remaining_len + 2 + topic_len] << 8) | (mqtt_data[1 + header.digits_remaining_len + 2 + topic_len + 1]);
-
-		uint8_t* payload = mqtt_data + 1 + header.digits_remaining_len + 2 + topic_len + pkt_id_len;
-		uint32_t payload_len = (header.remaining_len - 2 - topic_len - pkt_id_len);
-
-		cb_info->msg_received_cb(topic, topic_len, payload, payload_len, qos);
 
 		// bytes left in buf
 		return (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
-
 	}
 
 	default:

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "mqtt_packets.h"
 
-typedef void (*msg_received_cb_t)(uint8_t* topic, uint16_t topic_len, uint8_t* data, uint32_t data_len, uint8_t qos);
+typedef void (*msg_received_cb_t)(struct mqtt_publish_resp_t* publish_resp);
 typedef uint32_t (*elapsed_time_cb_t)();
 
 struct mqtt_cb_info_t
