@@ -1,10 +1,8 @@
 #ifndef MQTT_CLIENT_H
 #define MQTT_CLIENT_H
 
-#include "tcp_connection_raw.h"
 #include <stdbool.h>
-
-typedef uint32_t (*elapsed_time_cb_t)();
+#include "tcp_connection_raw.h"
 
 enum mqtt_client_err_t
 {
@@ -13,7 +11,8 @@ enum mqtt_client_err_t
 	MQTT_ALREADY_CONNECTED = 2,
 	MQTT_SUBSCRIBE_FAILURE = 3,
 	MQTT_PUBLISH_FAILURE = 4,
-	MQTT_CONNECT_FAILURE = 5
+	MQTT_CONNECT_FAILURE = 5,
+	MQTT_INVALID_MSG = 6
 };
 
 
@@ -33,13 +32,11 @@ struct mqtt_client_connect_opts_t
 
 struct mqtt_client_t
 {
-	struct tcp_connection_raw_t tcp_connection_raw;
 	struct mqtt_cb_info_t cb_info;
-	elapsed_time_cb_t elapsed_time_cb;
-	uint32_t last_activity;
 	struct mqtt_client_connect_opts_t* conn_opts;
 	uint16_t last_packet_id;
 	bool mqtt_connected;
+	struct tcp_connection_raw_t tcp_connection_raw;
 };
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,

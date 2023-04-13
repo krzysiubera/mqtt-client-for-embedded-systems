@@ -20,17 +20,10 @@ static uint16_t get_packet_id(uint16_t* last_packet_id)
 	return (*last_packet_id);
 }
 
-struct mqtt_header_t wait_for_packet(struct mqtt_cb_info_t* cb_info, enum mqtt_packet_type_t wanted_packet_type)
+void wait_for_connack(struct mqtt_cb_info_t* cb_info)
 {
-	static struct mqtt_header_t header;
-	memset(&header, 0, sizeof(header));
-
-	do
-	{
+	while (!cb_info->connack_resp_available)
 		TCPConnectionRaw_process_lwip_packets();
-		header = decode_mqtt_header(cb_info->mqtt_payload);
-	} while (header.packet_type != wanted_packet_type);
-	return header;
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
@@ -38,13 +31,11 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts)
 {
-	mqtt_client->elapsed_time_cb = elapsed_time_cb;
-	mqtt_client->last_activity = 0;
 	mqtt_client->conn_opts = conn_opts;
 	mqtt_client->last_packet_id = 0;
 	mqtt_client->mqtt_connected = false;
 
-	MQTTCbInfo_init(&mqtt_client->cb_info, msg_received_cb);
+	MQTTCbInfo_init(&mqtt_client->cb_info, msg_received_cb, elapsed_time_cb);
 	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
 }
 
@@ -89,11 +80,10 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->password, password_len);
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+	mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
 
-	struct mqtt_header_t connack_header = wait_for_packet(&mqtt_client->cb_info, MQTT_CONNACK_PACKET);
-	struct mqtt_connack_msg_t connack_msg = decode_connack_msg(mqtt_client->cb_info.mqtt_payload, connack_header);
-	mqtt_client->mqtt_connected = (connack_msg.conn_rc == MQTT_CONNECTION_ACCEPTED);
+	wait_for_connack(&mqtt_client->cb_info);
+	mqtt_client->mqtt_connected = (*(&mqtt_client->cb_info.connack_resp.conn_rc) == MQTT_CONNECTION_ACCEPTED);
 	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_CONNECT_FAILURE;
 }
 
@@ -120,7 +110,7 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 	send_buffer(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+	mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
 
 	if (qos == 0)
 	{
@@ -128,27 +118,14 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 	}
 	else if (qos == 1)
 	{
-		struct mqtt_header_t puback_header = wait_for_packet(&mqtt_client->cb_info, MQTT_PUBACK_PACKET);
-		struct mqtt_puback_msg_t puback_msg = decode_puback_msg(mqtt_client->cb_info.mqtt_payload, puback_header);
-		return (puback_msg.packet_id == current_packet_id) ? MQTT_SUCCESS : MQTT_PUBLISH_FAILURE;
+		// put to queue PUBACK req
+		return MQTT_SUCCESS;
 	}
 	else
 	{
-		struct mqtt_header_t pubrec_header = wait_for_packet(&mqtt_client->cb_info, MQTT_PUBREC_PACKET);
-		struct mqtt_pubrec_msg_t pubrec_msg = decode_pubrec_msg(mqtt_client->cb_info.mqtt_payload, pubrec_header);
-		if (pubrec_msg.packet_id != current_packet_id)
-			return MQTT_PUBLISH_FAILURE;
+		// put to queue PUBREC req
 
-		uint8_t ctrl_field = (MQTT_PUBREL_PACKET | 0x02);
-		send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, 2);
-		send_u16(&mqtt_client->tcp_connection_raw, &current_packet_id);
-
-		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
-
-		struct mqtt_header_t pubcomp_header = wait_for_packet(&mqtt_client->cb_info, MQTT_PUBCOMP_PACKET);
-		struct mqtt_pubcomp_msg_t pubcomp_msg = decode_pubcomp_msg(mqtt_client->cb_info.mqtt_payload, pubcomp_header);
-		return (pubcomp_msg.packet_id == current_packet_id) ? MQTT_SUCCESS : MQTT_PUBLISH_FAILURE;
+		return MQTT_SUCCESS;
 	}
 }
 
@@ -167,21 +144,20 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, c
 	send_u8(&mqtt_client->tcp_connection_raw, &qos);
 
 	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+	mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
 
-	struct mqtt_header_t suback_header = wait_for_packet(&mqtt_client->cb_info, MQTT_SUBACK_PACKET);
-	struct mqtt_suback_msg_t suback_msg = decode_suback_msg(mqtt_client->cb_info.mqtt_payload, suback_header);
-	return (current_packet_id == suback_msg.packet_id && qos == suback_msg.suback_rc) ? MQTT_SUCCESS : MQTT_SUBSCRIBE_FAILURE;
+	// put SUBACK request to queue
+	return MQTT_SUCCESS;
 }
 
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 {
-	uint32_t current_time = mqtt_client->elapsed_time_cb();
-	if ((current_time - mqtt_client->last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
+	uint32_t current_time = mqtt_client->cb_info.elapsed_time_cb();
+	if ((current_time - mqtt_client->cb_info.last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
 	{
 		send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_PINGREQ_PACKET, 0);
 		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+		mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
 	}
 }
 

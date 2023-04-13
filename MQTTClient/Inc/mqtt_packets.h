@@ -2,6 +2,7 @@
 #define MQTT_PACKETS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "mqtt_rc.h"
 
 enum mqtt_packet_type_t
@@ -29,30 +30,31 @@ struct mqtt_header_t
 	uint8_t digits_remaining_len;
 };
 
-struct mqtt_connack_msg_t
+struct mqtt_connack_resp_t
 {
+	bool session_present;
 	enum mqtt_connection_rc_t conn_rc;
 };
 
-struct mqtt_suback_msg_t
+struct mqtt_puback_resp_t
+{
+	uint16_t packet_id;
+};
+
+struct mqtt_pubrec_resp_t
+{
+	uint16_t packet_id;
+};
+
+struct mqtt_pubcomp_resp_t
+{
+	uint16_t packet_id;
+};
+
+struct mqtt_suback_resp_t
 {
 	uint16_t packet_id;
 	enum mqtt_suback_rc_t suback_rc;
-};
-
-struct mqtt_puback_msg_t
-{
-	uint16_t packet_id;
-};
-
-struct mqtt_pubrec_msg_t
-{
-	uint16_t packet_id;
-};
-
-struct mqtt_pubcomp_msg_t
-{
-	uint16_t packet_id;
 };
 
 #endif

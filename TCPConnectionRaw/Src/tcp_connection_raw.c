@@ -12,14 +12,13 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 	if (err == ERR_OK && p != NULL)
 	{
 		tcp_recved(pcb, p->tot_len);
-		cb_info->mqtt_payload = (uint8_t*) p->payload;
-		cb_info->mqtt_msg_len = p->tot_len;
+		uint8_t* payload = (uint8_t*) p->payload;
 
-		uint32_t bytes_left = get_mqtt_packet(cb_info->mqtt_payload, cb_info->mqtt_msg_len, cb_info);
+		uint32_t bytes_left = get_mqtt_packet(payload, p->tot_len, cb_info, pcb);
 		while (bytes_left != 0)
 		{
 			uint32_t offset = p->tot_len - bytes_left;
-			bytes_left = get_mqtt_packet(cb_info->mqtt_payload + offset, bytes_left, cb_info);
+			bytes_left = get_mqtt_packet(payload + offset, bytes_left, cb_info, pcb);
 		}
 	}
 	else
@@ -43,6 +42,7 @@ static void tcp_error_cb(void* arg, err_t err)
 
 static err_t tcp_poll_cb(void* arg, struct tcp_pcb* tpcb)
 {
+	TCPConnectionRaw_process_lwip_packets();
 	return ERR_OK;
 }
 
@@ -58,7 +58,7 @@ void TCPConnectionRaw_connect(struct tcp_connection_raw_t* tcp_connection_raw, s
 	tcp_connect(tcp_connection_raw->pcb, &tcp_connection_raw->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
 	tcp_arg(tcp_connection_raw->pcb, cb_info);
 	tcp_err(tcp_connection_raw->pcb, tcp_error_cb);
-	tcp_poll(tcp_connection_raw->pcb, tcp_poll_cb, 4);
+	tcp_poll(tcp_connection_raw->pcb, tcp_poll_cb, 1);
 	tcp_accept(tcp_connection_raw->pcb, tcp_connected_cb);
 }
 

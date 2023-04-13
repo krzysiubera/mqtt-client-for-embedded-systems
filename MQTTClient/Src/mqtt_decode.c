@@ -39,64 +39,49 @@ struct mqtt_header_t decode_mqtt_header(uint8_t* mqtt_data)
 	header.digits_remaining_len = get_digits_remaining_len(header.remaining_len);
 	return header;
 }
-
-struct mqtt_connack_msg_t decode_connack_msg(uint8_t* mqtt_data, struct mqtt_header_t connack_header)
+enum mqtt_client_err_t decode_connack_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_connack_resp_t* connack_resp)
 {
-	static struct mqtt_connack_msg_t connack_msg;
-	memset(&connack_msg, 0, sizeof(connack_msg));
+	if (header->remaining_len != CONNACK_RESP_LEN)
+		return MQTT_INVALID_MSG;
 
-	if (connack_header.remaining_len != 2)
-		return connack_msg;
-
-	connack_msg.conn_rc = mqtt_data[3];
-	return connack_msg;
+	connack_resp->session_present = mqtt_data[2] & 0x01;
+	connack_resp->conn_rc = mqtt_data[3];
+	return MQTT_SUCCESS;
 }
 
-struct mqtt_puback_msg_t decode_puback_msg(uint8_t* mqtt_data, struct mqtt_header_t puback_header)
+enum mqtt_client_err_t decode_puback_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_puback_resp_t* puback_resp)
 {
-	static struct mqtt_puback_msg_t puback_msg;
-	memset(&puback_msg, 0, sizeof(puback_msg));
+	if (header->remaining_len != PUBACK_RESP_LEN)
+		return MQTT_INVALID_MSG;
 
-	if (puback_header.remaining_len != 2)
-		return puback_msg;
-
-	puback_msg.packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
-	return puback_msg;
+	puback_resp->packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
+	return MQTT_SUCCESS;
 }
 
-struct mqtt_pubrec_msg_t decode_pubrec_msg(uint8_t* mqtt_data, struct mqtt_header_t pubrec_header)
+enum mqtt_client_err_t decode_pubrec_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_pubrec_resp_t* pubrec_resp)
 {
-	static struct mqtt_pubrec_msg_t pubrec_msg;
-	memset(&pubrec_msg, 0, sizeof(pubrec_msg));
+	if (header->remaining_len != PUBREC_RESP_LEN)
+		return MQTT_INVALID_MSG;
 
-	if (pubrec_header.remaining_len != 2)
-		return pubrec_msg;
-
-	pubrec_msg.packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
-	return pubrec_msg;
+	pubrec_resp->packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
+	return MQTT_SUCCESS;
 }
 
-struct mqtt_pubcomp_msg_t decode_pubcomp_msg(uint8_t* mqtt_data, struct mqtt_header_t pubcomp_header)
+enum mqtt_client_err_t decode_pubcomp_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_pubcomp_resp_t* pubcomp_resp)
 {
-	static struct mqtt_pubcomp_msg_t pubcomp_msg;
-	memset(&pubcomp_msg, 0, sizeof(pubcomp_msg));
+	if (header->remaining_len != PUBCOMP_RESP_LEN)
+		return MQTT_INVALID_MSG;
 
-	if (pubcomp_header.remaining_len != 2)
-		return pubcomp_msg;
-
-	pubcomp_msg.packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
-	return pubcomp_msg;
+	pubcomp_resp->packet_id = (mqtt_data[2] << 8) + mqtt_data[3];
+	return MQTT_SUCCESS;
 }
 
-struct mqtt_suback_msg_t decode_suback_msg(uint8_t* mqtt_data, struct mqtt_header_t suback_header)
+enum mqtt_client_err_t decode_suback_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_suback_resp_t* suback_resp)
 {
-	static struct mqtt_suback_msg_t suback_msg;
-	memset(&suback_msg, 0, sizeof(suback_msg));
+	if (header->remaining_len != SUBACK_RESP_LEN)
+		return MQTT_INVALID_MSG;
 
-	if (suback_header.remaining_len != 3)
-		return suback_msg;
-
-	suback_msg.packet_id = (mqtt_data[2] << 8) | (mqtt_data[3]);
-	suback_msg.suback_rc = mqtt_data[4];
-	return suback_msg;
+	suback_resp->packet_id = (mqtt_data[2] << 8) | (mqtt_data[3]);
+	suback_resp->suback_rc = mqtt_data[4];
+	return MQTT_SUCCESS;
 }
