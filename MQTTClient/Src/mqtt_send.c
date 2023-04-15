@@ -1,4 +1,6 @@
 #include "mqtt_send.h"
+#include "mqtt_client.h"
+#include "tcp_connection_raw.h"
 #include <string.h>
 
 static uint8_t encode_remaining_len(uint8_t* buf, uint32_t remaining_len)
@@ -15,38 +17,38 @@ static uint8_t encode_remaining_len(uint8_t* buf, uint32_t remaining_len)
 	return num_encoded_chars;
 }
 
-void send_utf8_encoded_str(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* msg, uint16_t len)
+void send_utf8_encoded_str(struct mqtt_client_t* mqtt_client, uint8_t* msg, uint16_t len)
 {
 	uint8_t str_len_encoded[2];
 	str_len_encoded[0] = (len >> 8) & 0xFF;
 	str_len_encoded[1] = (len & 0xFF);
-	TCPConnectionRaw_write(tcp_connection_raw, str_len_encoded, 2);
-	TCPConnectionRaw_write(tcp_connection_raw, msg, len);
+	TCPHandler_write(mqtt_client->pcb, str_len_encoded, 2);
+	TCPHandler_write(mqtt_client->pcb, msg, len);
 }
 
-void send_u16(struct tcp_connection_raw_t* tcp_connection_raw, uint16_t* val)
+void send_u16(struct mqtt_client_t* mqtt_client, uint16_t* val)
 {
 	uint16_t len = *val;
 	uint8_t u16_as_bytes[2] = {(len >> 8) & 0xFF, (len & 0xFF)};
-	TCPConnectionRaw_write(tcp_connection_raw, u16_as_bytes, 2);
+	TCPHandler_write(mqtt_client->pcb, u16_as_bytes, 2);
 }
 
-void send_u8(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* val)
+void send_u8(struct mqtt_client_t* mqtt_client, uint8_t* val)
 {
-	TCPConnectionRaw_write(tcp_connection_raw, val, 1);
+	TCPHandler_write(mqtt_client->pcb, val, 1);
 }
 
-void send_fixed_header(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t ctrl_field, uint32_t remaining_len)
+void send_fixed_header(struct mqtt_client_t* mqtt_client, uint8_t ctrl_field, uint32_t remaining_len)
 {
 	uint8_t remaining_len_encoded[4];
 	memset(remaining_len_encoded, 0, 4);
 	uint8_t size_remaining_len_field = encode_remaining_len(remaining_len_encoded, remaining_len);
 
-	TCPConnectionRaw_write(tcp_connection_raw, &ctrl_field, 1);
-	TCPConnectionRaw_write(tcp_connection_raw, remaining_len_encoded, size_remaining_len_field);
+	TCPHandler_write(mqtt_client->pcb, &ctrl_field, 1);
+	TCPHandler_write(mqtt_client->pcb, remaining_len_encoded, size_remaining_len_field);
 }
 
-void send_buffer(struct tcp_connection_raw_t* tcp_connection_raw, uint8_t* buffer, uint16_t len)
+void send_buffer(struct mqtt_client_t* mqtt_client, uint8_t* buffer, uint16_t len)
 {
-	TCPConnectionRaw_write(tcp_connection_raw, buffer, len);
+	TCPHandler_write(mqtt_client->pcb, buffer, len);
 }

@@ -1,9 +1,9 @@
 #include <string.h>
 #include "mqtt_client.h"
 #include "mqtt_packets.h"
-#include "mqtt_cb_info.h"
 #include "mqtt_send.h"
 #include "mqtt_decode.h"
+#include "tcp_connection_raw.h"
 
 #define CLEAN_SESSION 1
 
@@ -20,10 +20,10 @@ static uint16_t get_packet_id(uint16_t* last_packet_id)
 	return (*last_packet_id);
 }
 
-void wait_for_connack(struct mqtt_cb_info_t* cb_info)
+void wait_for_connack(struct mqtt_client_t* mqtt_client)
 {
-	while (!cb_info->connack_resp_available)
-		TCPConnectionRaw_process_lwip_packets();
+	while (!mqtt_client->connack_resp_available)
+		TCPHandler_process_lwip_packets();
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
@@ -34,9 +34,14 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->conn_opts = conn_opts;
 	mqtt_client->last_packet_id = 0;
 	mqtt_client->mqtt_connected = false;
+	mqtt_client->pcb = NULL;
+	memset(&mqtt_client->connack_resp, 0, sizeof(mqtt_client->connack_resp));
+	mqtt_client->connack_resp_available = false;
+	mqtt_client->msg_received_cb = msg_received_cb;
+	mqtt_client->last_activity = 0;
+	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 
-	MQTTCbInfo_init(&mqtt_client->cb_info, msg_received_cb, elapsed_time_cb);
-	TCPConnectionRaw_init(&mqtt_client->tcp_connection_raw);
+	TCPHandler_set_ip_address(&mqtt_client->broker_ip_addr);
 }
 
 enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
@@ -44,7 +49,13 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	if (mqtt_client->mqtt_connected)
 		return MQTT_ALREADY_CONNECTED;
 
-	TCPConnectionRaw_connect(&mqtt_client->tcp_connection_raw, &mqtt_client->cb_info);
+	mqtt_client->pcb = TCPHandler_get_pcb();
+	if (mqtt_client->pcb == NULL)
+		return MQTT_MEMORY_ERR;
+
+	enum mqtt_client_err_t rc = TCPHandler_connect(mqtt_client);
+	if (rc != MQTT_SUCCESS)
+		return MQTT_CONNECT_FAILURE;
 
 	uint16_t client_id_len = strlen(mqtt_client->conn_opts->client_id);
 	uint16_t will_topic_len = (mqtt_client->conn_opts->will_topic != NULL) ? strlen(mqtt_client->conn_opts->will_topic) : 0;
@@ -62,30 +73,30 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 			                (mqtt_client->conn_opts->will_qos << 4) | ((will_msg_len > 0) << 2) | (CLEAN_SESSION << 1);
 
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
-	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) protocol_name, strlen(protocol_name));
-	send_u8(&mqtt_client->tcp_connection_raw, &protocol_version);
-	send_u8(&mqtt_client->tcp_connection_raw, &connect_flags);
+	send_fixed_header(mqtt_client, ctrl_field, remaining_len);
+	send_utf8_encoded_str(mqtt_client, (uint8_t*) protocol_name, strlen(protocol_name));
+	send_u8(mqtt_client, &protocol_version);
+	send_u8(mqtt_client, &connect_flags);
 
 	uint16_t keepalive_seconds = mqtt_client->conn_opts->keepalive_ms / 1000;
-	send_u16(&mqtt_client->tcp_connection_raw, &keepalive_seconds);
+	send_u16(mqtt_client, &keepalive_seconds);
 
 	// write payload
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
+	send_utf8_encoded_str(mqtt_client, (uint8_t*) mqtt_client->conn_opts->client_id, client_id_len);
 	if (will_topic_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_topic, will_topic_len);
+		send_utf8_encoded_str(mqtt_client, (uint8_t*) mqtt_client->conn_opts->will_topic, will_topic_len);
 	if (will_msg_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->will_msg, will_msg_len);
+		send_utf8_encoded_str(mqtt_client, (uint8_t*) mqtt_client->conn_opts->will_msg, will_msg_len);
 	if (username_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->username, username_len);
+		send_utf8_encoded_str(mqtt_client, (uint8_t*) mqtt_client->conn_opts->username, username_len);
 	if (password_len > 0)
-		send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) mqtt_client->conn_opts->password, password_len);
+		send_utf8_encoded_str(mqtt_client, (uint8_t*) mqtt_client->conn_opts->password, password_len);
 
-	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
+	TCPHandler_output(mqtt_client->pcb);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	wait_for_connack(&mqtt_client->cb_info);
-	mqtt_client->mqtt_connected = (*(&mqtt_client->cb_info.connack_resp.conn_rc) == MQTT_CONNECTION_ACCEPTED);
+	wait_for_connack(mqtt_client);
+	mqtt_client->mqtt_connected = (*(&mqtt_client->connack_resp.conn_rc) == MQTT_CONNECTION_ACCEPTED);
 	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_CONNECT_FAILURE;
 }
 
@@ -99,20 +110,20 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 		remaining_len += 2;
 
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain);
-	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
+	send_fixed_header(mqtt_client, ctrl_field, remaining_len);
 
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
+	send_utf8_encoded_str(mqtt_client, (uint8_t*) topic, strlen(topic));
 	uint16_t current_packet_id = 0;
 	if (qos != 0)
 	{
 		current_packet_id = get_packet_id(&mqtt_client->last_packet_id);
-		send_u16(&mqtt_client->tcp_connection_raw, &current_packet_id);
+		send_u16(mqtt_client, &current_packet_id);
 	}
 
-	send_buffer(&mqtt_client->tcp_connection_raw, (uint8_t*) msg, strlen(msg));
+	send_buffer(mqtt_client, (uint8_t*) msg, strlen(msg));
 
-	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
+	TCPHandler_output(mqtt_client->pcb);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 	if (qos == 0)
 	{
@@ -138,15 +149,15 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, c
 
 	uint32_t remaining_len = 2 + 2 + strlen(topic) + 1;
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
-	send_fixed_header(&mqtt_client->tcp_connection_raw, ctrl_field, remaining_len);
+	send_fixed_header(mqtt_client, ctrl_field, remaining_len);
 
 	uint16_t current_packet_id = get_packet_id(&mqtt_client->last_packet_id);
-	send_u16(&mqtt_client->tcp_connection_raw, &current_packet_id);
-	send_utf8_encoded_str(&mqtt_client->tcp_connection_raw, (uint8_t*) topic, strlen(topic));
-	send_u8(&mqtt_client->tcp_connection_raw, &qos);
+	send_u16(mqtt_client, &current_packet_id);
+	send_utf8_encoded_str(mqtt_client, (uint8_t*) topic, strlen(topic));
+	send_u8(mqtt_client, &qos);
 
-	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
+	TCPHandler_output(mqtt_client->pcb);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 	// put SUBACK request to queue
 	return MQTT_SUCCESS;
@@ -154,12 +165,12 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, c
 
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 {
-	uint32_t current_time = mqtt_client->cb_info.elapsed_time_cb();
-	if ((current_time - mqtt_client->cb_info.last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
+	uint32_t current_time = mqtt_client->elapsed_time_cb();
+	if ((current_time - mqtt_client->last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
 	{
-		send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_PINGREQ_PACKET, 0);
-		TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-		mqtt_client->cb_info.last_activity = mqtt_client->cb_info.elapsed_time_cb();
+		send_fixed_header(mqtt_client, MQTT_PINGREQ_PACKET, 0);
+		TCPHandler_output(mqtt_client->pcb);
+		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 	}
 }
 
@@ -168,14 +179,14 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	if (!mqtt_client->mqtt_connected)
 		return;
 
-	send_fixed_header(&mqtt_client->tcp_connection_raw, MQTT_DISCONNECT_PACKET, 0);
-	TCPConnectionRaw_output(&mqtt_client->tcp_connection_raw);
-	TCPConnectionRaw_close(&mqtt_client->tcp_connection_raw);
+	send_fixed_header(mqtt_client, MQTT_DISCONNECT_PACKET, 0);
+	TCPHandler_output(mqtt_client->pcb);
+	TCPHandler_close(mqtt_client->pcb);
 	mqtt_client->mqtt_connected = false;
 }
 
 void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
 {
 	MQTTClient_keepalive(mqtt_client);
-	TCPConnectionRaw_process_lwip_packets();
+	TCPHandler_process_lwip_packets();
 }

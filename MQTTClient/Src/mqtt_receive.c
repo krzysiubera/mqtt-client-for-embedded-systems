@@ -2,8 +2,9 @@
 #include "mqtt_decode.h"
 #include "mqtt_send.h"
 #include "mqtt_client.h"
+#include "lwip/tcp.h"
 
-uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_info_t* cb_info, struct tcp_pcb* active_pcb)
+uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client)
 {
 	struct mqtt_header_t header = decode_mqtt_header(mqtt_data);
 
@@ -15,8 +16,8 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 		enum mqtt_client_err_t rc = decode_connack_resp(mqtt_data, &header, &connack_resp);
 		if (rc == MQTT_SUCCESS)
 		{
-			cb_info->connack_resp = connack_resp;
-			cb_info->connack_resp_available = true;
+			mqtt_client->connack_resp = connack_resp;
+			mqtt_client->connack_resp_available = true;
 		}
 		return (tot_len - 1 - header.digits_remaining_len) - CONNACK_RESP_LEN;
 	}
@@ -39,11 +40,11 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 			// check if PUBREC req is in queue - if it is, send pubrel with the same packet id
 			uint8_t header[2] = {(MQTT_PUBREL_PACKET | 0x02), 2};
 			uint8_t pkt_id_encoded[2] = {(pubrec_resp.packet_id >> 8) & 0xFF, (pubrec_resp.packet_id & 0xFF)};
-			tcp_write(active_pcb, (void*) header, 2, 1);
-			tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
-			tcp_output(active_pcb);
+			tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
+			tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
+			tcp_output(mqtt_client->pcb);
 
-			cb_info->last_activity = cb_info->elapsed_time_cb();
+			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 			// put PUBCOMP request to queue
 		}
@@ -75,7 +76,7 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 		enum mqtt_client_err_t rc = decode_publish_resp(mqtt_data, &header, &publish_resp);
 		if (rc == MQTT_SUCCESS)
 		{
-			cb_info->msg_received_cb(&publish_resp);
+			mqtt_client->msg_received_cb(&publish_resp);
 
 
 			if (publish_resp.qos == 0)
@@ -87,22 +88,22 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 				// send puback
 				uint8_t header[2] = {MQTT_PUBACK_PACKET, 2};
 				uint8_t pkt_id_encoded[2] = {(publish_resp.packet_id >> 8) & 0xFF, (publish_resp.packet_id & 0xFF)};
-				tcp_write(active_pcb, (void*) header, 2, 1);
-				tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
-				tcp_output(active_pcb);
+				tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
+				tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
+				tcp_output(mqtt_client->pcb);
 
-				cb_info->last_activity = cb_info->elapsed_time_cb();
+				mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 			}
 			else if (publish_resp.qos == 2)
 			{
 				// send pubrec
 				uint8_t header[2] = {MQTT_PUBREC_PACKET, 2};
 				uint8_t pkt_id_encoded[2] = {(publish_resp.packet_id >> 8) & 0xFF, (publish_resp.packet_id & 0xFF)};
-				tcp_write(active_pcb, (void*) header, 2, 1);
-				tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
-				tcp_output(active_pcb);
+				tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
+				tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
+				tcp_output(mqtt_client->pcb);
 
-				cb_info->last_activity = cb_info->elapsed_time_cb();
+				mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 				// put to queue request for PUBREL
 
@@ -125,11 +126,11 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_cb_in
 
 			uint8_t header[2] = {MQTT_PUBCOMP_PACKET, 2};
 			uint8_t pkt_id_encoded[2] = {(pubrel_resp.packet_id >> 8) & 0xFF, (pubrel_resp.packet_id & 0xFF)};
-			tcp_write(active_pcb, (void*) header, 2, 1);
-			tcp_write(active_pcb, (void*) pkt_id_encoded, 2, 1);
-			tcp_output(active_pcb);
+			tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
+			tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
+			tcp_output(mqtt_client->pcb);
 
-			cb_info->last_activity = cb_info->elapsed_time_cb();
+			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 		}
 		return (tot_len - 1 - header.digits_remaining_len) - PUBREL_RESP_LEN;
