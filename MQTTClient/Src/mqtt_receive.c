@@ -1,8 +1,7 @@
 #include "mqtt_receive.h"
 #include "mqtt_decode.h"
 #include "mqtt_send.h"
-#include "mqtt_client.h"
-#include "lwip/tcp.h"
+#include "tcp_connection_raw.h"
 
 uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client)
 {
@@ -38,12 +37,10 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_clien
 		if (rc == MQTT_SUCCESS)
 		{
 			// check if PUBREC req is in queue - if it is, send pubrel with the same packet id
-			uint8_t header[2] = {(MQTT_PUBREL_PACKET | 0x02), 2};
-			uint8_t pkt_id_encoded[2] = {(pubrec_resp.packet_id >> 8) & 0xFF, (pubrec_resp.packet_id & 0xFF)};
-			tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
-			tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
-			tcp_output(mqtt_client->pcb);
+			send_fixed_header(mqtt_client, (MQTT_PUBREL_PACKET | 0x02), 2);
+			send_u16(mqtt_client, &pubrec_resp.packet_id);
 
+			TCPHandler_output(mqtt_client->pcb);
 			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 			// put PUBCOMP request to queue
@@ -85,34 +82,23 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_clien
 			}
 			else if (publish_resp.qos == 1)
 			{
-				// send puback
-				uint8_t header[2] = {MQTT_PUBACK_PACKET, 2};
-				uint8_t pkt_id_encoded[2] = {(publish_resp.packet_id >> 8) & 0xFF, (publish_resp.packet_id & 0xFF)};
-				tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
-				tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
-				tcp_output(mqtt_client->pcb);
+				send_fixed_header(mqtt_client, MQTT_PUBACK_PACKET, 2);
+				send_u16(mqtt_client, &publish_resp.packet_id);
 
+				TCPHandler_output(mqtt_client->pcb);
 				mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 			}
 			else if (publish_resp.qos == 2)
 			{
-				// send pubrec
-				uint8_t header[2] = {MQTT_PUBREC_PACKET, 2};
-				uint8_t pkt_id_encoded[2] = {(publish_resp.packet_id >> 8) & 0xFF, (publish_resp.packet_id & 0xFF)};
-				tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
-				tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
-				tcp_output(mqtt_client->pcb);
+				send_fixed_header(mqtt_client, MQTT_PUBREC_PACKET, 2);
+				send_u16(mqtt_client, &publish_resp.packet_id);
 
+				TCPHandler_output(mqtt_client->pcb);
 				mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 				// put to queue request for PUBREL
-
 			}
-
-
 		}
-
-
 		// bytes left in buf
 		return (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
 	}
@@ -123,15 +109,11 @@ uint32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_clien
 		if (rc == MQTT_SUCCESS)
 		{
 			// check if PUBREL msg in queue - if it is, send PUBCOMP with the same message ID
+			send_fixed_header(mqtt_client, MQTT_PUBCOMP_PACKET, 2);
+			send_u16(mqtt_client, &pubrel_resp.packet_id);
 
-			uint8_t header[2] = {MQTT_PUBCOMP_PACKET, 2};
-			uint8_t pkt_id_encoded[2] = {(pubrel_resp.packet_id >> 8) & 0xFF, (pubrel_resp.packet_id & 0xFF)};
-			tcp_write(mqtt_client->pcb, (void*) header, 2, 1);
-			tcp_write(mqtt_client->pcb, (void*) pkt_id_encoded, 2, 1);
-			tcp_output(mqtt_client->pcb);
-
+			TCPHandler_output(mqtt_client->pcb);
 			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
-
 		}
 		return (tot_len - 1 - header.digits_remaining_len) - PUBREL_RESP_LEN;
 	}
