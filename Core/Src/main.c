@@ -28,7 +28,7 @@
 #include "mqtt_client.h"
 #include <string.h>
 #include <stdbool.h>
-#include "swv_print.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -153,7 +153,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  MQTTClient_loop(&mqtt_client);
 
-	  /*
+
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 10000)
 	  {
@@ -163,7 +163,7 @@ int main(void)
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 	  }
-	  */
+
 
 
   }

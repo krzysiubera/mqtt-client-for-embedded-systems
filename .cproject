@@ -124,6 +124,8 @@
                                     <listOptionValue builtIn="false" value="../MQTTClient/Inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../TCPConnectionRaw/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../Core/Config"/>
                                     								
                                 </option>
                                 								
