@@ -113,13 +113,13 @@ int main(void)
   struct mqtt_client_t mqtt_client;
   struct mqtt_client_connect_opts_t conn_opts;
   conn_opts.client_id = "stm krzysiu";
-  conn_opts.username = "login";
-  conn_opts.password = "pass";
+  conn_opts.username = NULL;
+  conn_opts.password = NULL;
   conn_opts.will_topic = "info/device";
   conn_opts.will_msg = "stm disc";
   conn_opts.will_qos = 0;
   conn_opts.will_retain = false;
-  conn_opts.keepalive_ms = 300000;  // 300000 ms is 5 minutes
+  conn_opts.keepalive_ms = 10000;  // 10 sec
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
@@ -153,7 +153,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  MQTTClient_loop(&mqtt_client);
 
-
+	  /*
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 10000)
 	  {
@@ -163,6 +163,7 @@ int main(void)
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 	  }
+	  */
 
 
 
