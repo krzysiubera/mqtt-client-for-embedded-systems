@@ -5,9 +5,9 @@
 #include "mqtt_encode.h"
 #include "tcp_connection_raw.h"
 
-void wait_for_connack(struct mqtt_client_t* mqtt_client, uint32_t timeout_on_response_ms)
+void wait_for_connack(struct mqtt_client_t* mqtt_client)
 {
-	bool expired = (mqtt_client->elapsed_time_cb() - mqtt_client->last_activity > timeout_on_response_ms);
+	bool expired = (mqtt_client->elapsed_time_cb() - mqtt_client->last_activity > mqtt_client->timeout_on_connect_response_ms);
 	while ((!mqtt_client->connack_resp_available) && !expired)
 		TCPHandler_process_lwip_packets();
 }
@@ -15,7 +15,8 @@ void wait_for_connack(struct mqtt_client_t* mqtt_client, uint32_t timeout_on_res
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 msg_received_cb_t msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
-					 struct mqtt_client_connect_opts_t* conn_opts)
+					 struct mqtt_client_connect_opts_t* conn_opts,
+					 uint32_t timeout_on_connect_response_ms)
 {
 	mqtt_client->conn_opts = conn_opts;
 	mqtt_client->last_packet_id = 0;
@@ -26,12 +27,13 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->msg_received_cb = msg_received_cb;
 	mqtt_client->last_activity = 0;
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
+	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
 
 	TCPHandler_set_ip_address(&mqtt_client->broker_ip_addr);
 	mqtt_req_queue_init(&mqtt_client->req_queue);
 }
 
-enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client, uint32_t timeout_on_response_ms)
+enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 {
 	if (mqtt_client->mqtt_connected)
 		return MQTT_ALREADY_CONNECTED;
@@ -49,7 +51,7 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client, uin
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	wait_for_connack(mqtt_client, timeout_on_response_ms);
+	wait_for_connack(mqtt_client);
 	if (!mqtt_client->connack_resp_available)
 		return MQTT_TIMEOUT_ON_CONNECT;
 

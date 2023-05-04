@@ -120,8 +120,8 @@ int main(void)
   conn_opts.will_retain = false;
   conn_opts.keepalive_ms = 10000;  // 10 sec
 
-  MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
-  enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client, 5000);
+  MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts, 5000);
+  enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
   if (connect_rc == MQTT_TIMEOUT_ON_CONNECT)
   {
 	  printf("Timeout on connection to MQTT broker.\n");
