@@ -29,7 +29,6 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
 
-	TCPHandler_set_ip_address(&mqtt_client->broker_ip_addr);
 	mqtt_req_queue_init(&mqtt_client->req_queue);
 }
 

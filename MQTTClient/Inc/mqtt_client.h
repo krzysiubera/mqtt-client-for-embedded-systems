@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include "mqtt_packets.h"
 #include "mqtt_req_queue.h"
-#include "lwip/ip.h"
 
 typedef void (*msg_received_cb_t)(struct mqtt_publish_resp_t* publish_resp);
 typedef uint32_t (*elapsed_time_cb_t)();
@@ -43,7 +42,6 @@ struct mqtt_client_t
 	bool mqtt_connected;
 
 	struct tcp_pcb* pcb;
-	ip_addr_t broker_ip_addr;
 
 	struct mqtt_connack_resp_t connack_resp;
 	bool connack_resp_available;

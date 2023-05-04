@@ -62,11 +62,6 @@ void TCPHandler_process_lwip_packets()
 	MX_LWIP_Process();
 }
 
-void TCPHandler_set_ip_address(ip_addr_t* broker_ip_addr)
-{
-	IP4_ADDR(broker_ip_addr, 192, 168, 1, 2);
-}
-
 struct tcp_pcb* TCPHandler_get_pcb()
 {
 	return tcp_new();
@@ -74,7 +69,9 @@ struct tcp_pcb* TCPHandler_get_pcb()
 
 enum mqtt_client_err_t TCPHandler_connect(struct mqtt_client_t* mqtt_client)
 {
-	err_t err = tcp_connect(mqtt_client->pcb, &mqtt_client->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
+	ip_addr_t broker_ip_addr;
+	IP4_ADDR(&broker_ip_addr, 192, 168, 1, 2);
+	err_t err = tcp_connect(mqtt_client->pcb, &broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
 	if (err != ERR_OK)
 		return MQTT_TCP_CONNECT_FAILURE;
 
