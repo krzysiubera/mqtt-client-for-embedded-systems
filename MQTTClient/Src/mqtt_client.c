@@ -123,6 +123,13 @@ void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 
 void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
 {
-	MQTTClient_keepalive(mqtt_client);
 	TCPHandler_process_lwip_packets();
+	if (mqtt_client->mqtt_connected)
+	{
+		MQTTClient_keepalive(mqtt_client);
+	}
+	else
+	{
+		MQTTClient_connect(mqtt_client);
+	}
 }
