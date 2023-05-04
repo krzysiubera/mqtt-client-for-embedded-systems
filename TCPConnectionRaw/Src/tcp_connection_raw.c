@@ -76,7 +76,7 @@ enum mqtt_client_err_t TCPHandler_connect(struct mqtt_client_t* mqtt_client)
 {
 	err_t err = tcp_connect(mqtt_client->pcb, &mqtt_client->broker_ip_addr, TCP_CONNECTION_RAW_PORT, tcp_connected_cb);
 	if (err != ERR_OK)
-		return MQTT_CONNECT_FAILURE;
+		return MQTT_TCP_CONNECT_FAILURE;
 
 	tcp_arg(mqtt_client->pcb, mqtt_client);
 	tcp_err(mqtt_client->pcb, tcp_error_cb);

@@ -5,9 +5,10 @@
 #include "mqtt_encode.h"
 #include "tcp_connection_raw.h"
 
-void wait_for_connack(struct mqtt_client_t* mqtt_client)
+void wait_for_connack(struct mqtt_client_t* mqtt_client, uint32_t timeout_on_response_ms)
 {
-	while (!mqtt_client->connack_resp_available)
+	bool expired = (mqtt_client->elapsed_time_cb() - mqtt_client->last_activity > timeout_on_response_ms);
+	while ((!mqtt_client->connack_resp_available) && !expired)
 		TCPHandler_process_lwip_packets();
 }
 
@@ -30,7 +31,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_req_queue_init(&mqtt_client->req_queue);
 }
 
-enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
+enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client, uint32_t timeout_on_response_ms)
 {
 	if (mqtt_client->mqtt_connected)
 		return MQTT_ALREADY_CONNECTED;
@@ -41,16 +42,19 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 
 	enum mqtt_client_err_t rc = TCPHandler_connect(mqtt_client);
 	if (rc != MQTT_SUCCESS)
-		return MQTT_CONNECT_FAILURE;
+		return MQTT_TCP_CONNECT_FAILURE;
 
 	encode_mqtt_connect_msg(mqtt_client->pcb, mqtt_client->conn_opts);
 
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	wait_for_connack(mqtt_client);
+	wait_for_connack(mqtt_client, timeout_on_response_ms);
+	if (!mqtt_client->connack_resp_available)
+		return MQTT_TIMEOUT_ON_CONNECT;
+
 	mqtt_client->mqtt_connected = (*(&mqtt_client->connack_resp.conn_rc) == MQTT_CONNECTION_ACCEPTED);
-	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_CONNECT_FAILURE;
+	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_CONNECTION_REFUSED_BY_BROKER;
 }
 
 enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain)

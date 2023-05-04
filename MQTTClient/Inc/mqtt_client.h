@@ -14,11 +14,11 @@ enum mqtt_client_err_t
 	MQTT_SUCCESS = 0,
 	MQTT_NOT_CONNECTED = 1,
 	MQTT_ALREADY_CONNECTED = 2,
-	MQTT_SUBSCRIBE_FAILURE = 3,
-	MQTT_PUBLISH_FAILURE = 4,
-	MQTT_CONNECT_FAILURE = 5,
-	MQTT_INVALID_MSG = 6,
-	MQTT_MEMORY_ERR = 7
+	MQTT_TCP_CONNECT_FAILURE = 3,
+	MQTT_INVALID_MSG = 4,
+	MQTT_MEMORY_ERR = 5,
+	MQTT_TIMEOUT_ON_CONNECT = 6,
+	MQTT_CONNECTION_REFUSED_BY_BROKER = 7
 };
 
 
@@ -58,7 +58,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 msg_received_cb_t msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts);
-enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client);
+enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client, uint32_t timeout_on_response_ms);
 enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain);
 enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);

@@ -121,8 +121,33 @@ int main(void)
   conn_opts.keepalive_ms = 10000;  // 10 sec
 
   MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts);
-  enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
-  printf("Connected with rc: %d\n", connect_rc);
+  enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client, 5000);
+  if (connect_rc == MQTT_TIMEOUT_ON_CONNECT)
+  {
+	  printf("Timeout on connection to MQTT broker.\n");
+	  while (1);
+  }
+  else if (connect_rc == MQTT_CONNECTION_REFUSED_BY_BROKER)
+  {
+	  printf("Connection refused by MQTT broker. The reason: %d\n", mqtt_client.connack_resp.conn_rc);
+	  while (1);
+  }
+  else if (connect_rc == MQTT_TCP_CONNECT_FAILURE)
+  {
+	  printf("No TCP connection\n");
+	  while (1);
+  }
+  else if (connect_rc == MQTT_MEMORY_ERR)
+  {
+	  printf("Memory error\n");
+	  while (1);
+  }
+  else
+  {
+	  printf("Connected to MQTT broker successfully\n");
+  }
+
+
 
   enum mqtt_client_err_t pub_rc[3];
   pub_rc[0] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
