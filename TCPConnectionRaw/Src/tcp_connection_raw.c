@@ -13,16 +13,28 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		tcp_recved(pcb, p->tot_len);
 		uint8_t* payload = (uint8_t*) p->payload;
 
-		uint32_t bytes_left = get_mqtt_packet(payload, p->tot_len, mqtt_client);
+		int32_t bytes_left = get_mqtt_packet(payload, p->tot_len, mqtt_client);
+		if (bytes_left == MQTT_INVALID_MSG_LEN)
+		{
+			tcp_close(mqtt_client->pcb);
+			mqtt_client->mqtt_connected = false;
+		}
+
 		while (bytes_left != 0)
 		{
-			uint32_t offset = p->tot_len - bytes_left;
-			bytes_left = get_mqtt_packet(payload + offset, bytes_left, mqtt_client);
+			uint32_t offset = p->tot_len - (uint32_t) bytes_left;
+			bytes_left = get_mqtt_packet(payload + offset, (uint32_t) bytes_left, mqtt_client);
+			if (bytes_left == MQTT_INVALID_MSG_LEN)
+			{
+				tcp_close(mqtt_client->pcb);
+				mqtt_client->mqtt_connected = false;
+			}
 		}
 	}
 	else
 	{
 		tcp_close(pcb);
+		mqtt_client->mqtt_connected = false;
 	}
 	pbuf_free(p);
 	return ERR_OK;

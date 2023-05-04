@@ -27,6 +27,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 
 	TCPHandler_set_ip_address(&mqtt_client->broker_ip_addr);
+	mqtt_req_queue_init(&mqtt_client->req_queue);
 }
 
 enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
@@ -57,23 +58,21 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	uint16_t current_packet_id = encode_mqtt_publish_msg(mqtt_client->pcb, topic, msg, qos, retain, &mqtt_client->last_packet_id);
+	encode_mqtt_publish_msg(mqtt_client->pcb, topic, msg, qos, retain, &mqtt_client->last_packet_id);
+	uint16_t current_packet_id = mqtt_client->last_packet_id;
 
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	if (qos == 0)
+	if (qos == 1)
 	{
-		// do nothing
-	}
-	else if (qos == 1)
-	{
-		// put to queue PUBACK req
-		return MQTT_SUCCESS;
+		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=current_packet_id };
+		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req);
 	}
 	else
 	{
-		// put to queue PUBREC req
+		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=current_packet_id };
+		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req);
 	}
 	return MQTT_SUCCESS;
 }
@@ -83,12 +82,15 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, c
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	uint16_t current_packet_id = encode_mqtt_subscribe_msg(mqtt_client->pcb, topic, qos, &mqtt_client->last_packet_id);
+	encode_mqtt_subscribe_msg(mqtt_client->pcb, topic, qos, &mqtt_client->last_packet_id);
+	uint16_t current_packet_id = mqtt_client->last_packet_id;
 
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	// put SUBACK request to queue
+	struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=current_packet_id };
+	mqtt_req_queue_add(&mqtt_client->req_queue, &suback_req);
+
 	return MQTT_SUCCESS;
 }
 

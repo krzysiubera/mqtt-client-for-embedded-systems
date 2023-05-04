@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "mqtt_packets.h"
+#include "mqtt_req_queue.h"
 #include "lwip/ip.h"
 
 typedef void (*msg_received_cb_t)(struct mqtt_publish_resp_t* publish_resp);
@@ -49,6 +50,8 @@ struct mqtt_client_t
 	msg_received_cb_t msg_received_cb;
 	uint32_t last_activity;
 	elapsed_time_cb_t elapsed_time_cb;
+
+	struct mqtt_req_queue_t req_queue;
 };
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,

@@ -48,7 +48,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+struct mqtt_client_t mqtt_client;
+struct mqtt_client_connect_opts_t conn_opts;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,8 +111,6 @@ int main(void)
   MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
 
-  struct mqtt_client_t mqtt_client;
-  struct mqtt_client_connect_opts_t conn_opts;
   conn_opts.client_id = "stm krzysiu";
   conn_opts.username = NULL;
   conn_opts.password = NULL;
@@ -153,9 +152,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  MQTTClient_loop(&mqtt_client);
 
-	  /*
 	  current_time = HAL_GetTick();
-	  if (current_time - previous_time >= 10000)
+	  if (current_time - previous_time >= 20000)
 	  {
 		  pub_rc[0] = MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
 		  pub_rc[1] = MQTTClient_publish(&mqtt_client, "sensor/magnet", "5 uT", 0, false);
@@ -163,10 +161,6 @@ int main(void)
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 	  }
-	  */
-
-
-
   }
   /* USER CODE END 3 */
 }

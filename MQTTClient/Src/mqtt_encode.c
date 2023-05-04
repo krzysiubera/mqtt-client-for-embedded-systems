@@ -80,7 +80,7 @@ void encode_mqtt_connect_msg(struct tcp_pcb* pcb, struct mqtt_client_connect_opt
 		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->password, strlen(conn_opts->password));
 }
 
-uint16_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, char* topic, char* msg, uint8_t qos, bool retain, uint16_t* last_packet_id)
+void encode_mqtt_publish_msg(struct tcp_pcb* pcb, char* topic, char* msg, uint8_t qos, bool retain, uint16_t* last_packet_id)
 {
 	uint32_t remaining_len = get_publish_packet_len(topic, msg, qos);
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (qos << 1) | retain);
@@ -94,10 +94,9 @@ uint16_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, char* topic, char* msg, ui
 		send_u16(pcb, &current_packet_id);
 	}
 	send_buffer(pcb, (uint8_t*) msg, strlen(msg));
-	return current_packet_id;
 }
 
-uint16_t encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, char* topic, uint8_t qos, uint16_t* last_packet_id)
+void encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, char* topic, uint8_t qos, uint16_t* last_packet_id)
 {
 	uint32_t remaining_len = get_subscribe_packet_len(topic);
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
@@ -107,8 +106,6 @@ uint16_t encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, char* topic, uint8_t qos
 	send_u16(pcb, &current_packet_id);
 	send_utf8_encoded_str(pcb, (uint8_t*) topic, strlen(topic));
 	send_u8(pcb, &qos);
-
-	return current_packet_id;
 }
 
 void encode_mqtt_pingreq_msg(struct tcp_pcb* pcb)
