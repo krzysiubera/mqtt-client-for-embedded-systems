@@ -74,7 +74,7 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=current_packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req);
 	}
-	else
+	else if (qos == 2)
 	{
 		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=current_packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req);
