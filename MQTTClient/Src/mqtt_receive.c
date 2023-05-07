@@ -4,6 +4,8 @@
 #include "mqtt_encode.h"
 #include "tcp_connection_raw.h"
 
+#include <stdio.h>
+
 int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client)
 {
 	struct mqtt_header_t header = decode_mqtt_header(mqtt_data);
@@ -29,6 +31,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG_LEN;
 
+		printf("Getting request for PUBACK\n");
 		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=puback_resp.packet_id};
 		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &puback_req);
 		if (!found)
@@ -43,6 +46,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG_LEN;
 
+		printf("Getting request for PUBREC\n");
 		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=pubrec_resp.packet_id };
 		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &pubrec_req);
 		if (!found)
@@ -53,6 +57,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		TCPHandler_output(mqtt_client->pcb);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
+		printf("Packing request for PUBCOMP\n");
 		struct mqtt_req_t pubcomp_req = { .packet_type=MQTT_PUBCOMP_PACKET, .packet_id=pubrec_resp.packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &pubcomp_req);
 
@@ -65,6 +70,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG_LEN;
 
+		printf("Getting request for PUBCOMP\n");
 		struct mqtt_req_t pubcomp_req = { .packet_type=MQTT_PUBCOMP_PACKET, .packet_id=pubcomp_resp.packet_id };
 		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &pubcomp_req);
 		if (!found)
@@ -79,6 +85,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG_LEN;
 
+		printf("Getting request for SUBACK\n");
 		struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=suback_resp.packet_id };
 		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &suback_req);
 		if (!found)
@@ -109,6 +116,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 			TCPHandler_output(mqtt_client->pcb);
 			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
+			printf("Packing request for PUBREL\n");
 			struct mqtt_req_t pubrel_req = { .packet_type=MQTT_PUBREL_PACKET, .packet_id=publish_resp.packet_id };
 			mqtt_req_queue_add(&mqtt_client->req_queue, &pubrel_req);
 		}
@@ -122,6 +130,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG_LEN;
 
+		printf("Getting request for PUBREL\n");
 		struct mqtt_req_t pubrel_req = { .packet_type=MQTT_PUBREL_PACKET, .packet_id=pubrel_resp.packet_id };
 		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &pubrel_req);
 		if (!found)

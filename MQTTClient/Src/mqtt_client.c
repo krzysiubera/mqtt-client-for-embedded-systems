@@ -5,6 +5,8 @@
 #include "mqtt_encode.h"
 #include "tcp_connection_raw.h"
 
+#include <stdio.h>
+
 void wait_for_connack(struct mqtt_client_t* mqtt_client)
 {
 	bool expired = (mqtt_client->elapsed_time_cb() - mqtt_client->last_activity > mqtt_client->timeout_on_connect_response_ms);
@@ -71,11 +73,13 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 
 	if (qos == 1)
 	{
+		printf("Packing request for PUBACK\n");
 		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=current_packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req);
 	}
 	else if (qos == 2)
 	{
+		printf("Packing request for PUBREC\n");
 		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=current_packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req);
 	}
@@ -93,6 +97,7 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, c
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
+	printf("Packing request for SUBACK\n");
 	struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=current_packet_id };
 	mqtt_req_queue_add(&mqtt_client->req_queue, &suback_req);
 
