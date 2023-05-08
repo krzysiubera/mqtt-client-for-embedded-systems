@@ -99,7 +99,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG_LEN;
 
-		mqtt_client->msg_received_cb(&publish_resp);
+		mqtt_client->on_msg_received_cb(&publish_resp);
 
 		if (publish_resp.qos == 1)
 		{

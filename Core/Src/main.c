@@ -61,7 +61,7 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void mqtt_msg_received_user_cb(struct mqtt_publish_resp_t* publish_resp)
+void on_msg_received_cb(struct mqtt_publish_resp_t* publish_resp)
 {
 	uint8_t topic_str[publish_resp->topic_len + 1];
 	memcpy(topic_str, publish_resp->topic, publish_resp->topic_len);
@@ -120,7 +120,7 @@ int main(void)
   conn_opts.will_retain = false;
   conn_opts.keepalive_ms = 10000;  // 10 sec
 
-  MQTTClient_init(&mqtt_client, mqtt_msg_received_user_cb, HAL_GetTick, &conn_opts, 5000);
+  MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
   if (connect_rc == MQTT_TIMEOUT_ON_CONNECT)
   {

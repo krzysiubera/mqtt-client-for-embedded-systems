@@ -13,7 +13,7 @@ void wait_for_connack(struct mqtt_client_t* mqtt_client)
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
-					 msg_received_cb_t msg_received_cb,
+					 on_msg_received_cb_t on_msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts,
 					 uint32_t timeout_on_connect_response_ms)
@@ -24,7 +24,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->pcb = NULL;
 	memset(&mqtt_client->connack_resp, 0, sizeof(mqtt_client->connack_resp));
 	mqtt_client->connack_resp_available = false;
-	mqtt_client->msg_received_cb = msg_received_cb;
+	mqtt_client->on_msg_received_cb = on_msg_received_cb;
 	mqtt_client->last_activity = 0;
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
