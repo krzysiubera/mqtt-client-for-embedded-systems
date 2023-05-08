@@ -21,7 +21,10 @@ struct mqtt_req_queue_t
 };
 
 void mqtt_req_queue_init(struct mqtt_req_queue_t* req_queue);
-void mqtt_req_queue_add(struct mqtt_req_queue_t* req_queue, struct mqtt_req_t* req);
-bool mqtt_req_queue_get(struct mqtt_req_queue_t* req_queue, struct mqtt_req_t* req);
+bool mqtt_req_queue_add(struct mqtt_req_queue_t* req_queue, struct mqtt_req_t* req);
+bool mqtt_req_queue_remove(struct mqtt_req_queue_t* req_queue);
+bool mqtt_req_queue_update(struct mqtt_req_queue_t* req_queue, struct mqtt_req_t* item_to_update);
+
+
 
 #endif

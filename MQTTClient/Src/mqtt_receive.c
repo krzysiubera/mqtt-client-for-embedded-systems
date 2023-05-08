@@ -30,9 +30,11 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 			return MQTT_INVALID_MSG_LEN;
 
 		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=puback_resp.packet_id};
-		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &puback_req);
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &puback_req);
 		if (!found)
 			return MQTT_INVALID_MSG_LEN;
+
+		mqtt_req_queue_remove(&mqtt_client->req_queue);
 
 		return (tot_len - 1 - header.digits_remaining_len) - PUBACK_RESP_LEN;
 	}
@@ -44,7 +46,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 			return MQTT_INVALID_MSG_LEN;
 
 		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=pubrec_resp.packet_id };
-		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &pubrec_req);
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &pubrec_req);
 		if (!found)
 			return MQTT_INVALID_MSG_LEN;
 
@@ -54,7 +56,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
 		struct mqtt_req_t pubcomp_req = { .packet_type=MQTT_PUBCOMP_PACKET, .packet_id=pubrec_resp.packet_id };
-		mqtt_req_queue_add(&mqtt_client->req_queue, &pubcomp_req);
+		mqtt_req_queue_update(&mqtt_client->req_queue, &pubcomp_req);
 
 		return (tot_len - 1 - header.digits_remaining_len) - PUBREC_RESP_LEN;
 	}
@@ -66,9 +68,11 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 			return MQTT_INVALID_MSG_LEN;
 
 		struct mqtt_req_t pubcomp_req = { .packet_type=MQTT_PUBCOMP_PACKET, .packet_id=pubcomp_resp.packet_id };
-		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &pubcomp_req);
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &pubcomp_req);
 		if (!found)
 			return MQTT_INVALID_MSG_LEN;
+
+		mqtt_req_queue_remove(&mqtt_client->req_queue);
 
 		return (tot_len - 1 - header.digits_remaining_len) - PUBCOMP_RESP_LEN;
 	}
@@ -80,9 +84,11 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 			return MQTT_INVALID_MSG_LEN;
 
 		struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=suback_resp.packet_id };
-		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &suback_req);
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &suback_req);
 		if (!found)
 			return MQTT_INVALID_MSG_LEN;
+
+		mqtt_req_queue_remove(&mqtt_client->req_queue);
 
 		return (tot_len - 1 - header.digits_remaining_len) - SUBACK_RESP_LEN;
 	}
@@ -123,7 +129,7 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 			return MQTT_INVALID_MSG_LEN;
 
 		struct mqtt_req_t pubrel_req = { .packet_type=MQTT_PUBREL_PACKET, .packet_id=pubrel_resp.packet_id };
-		bool found = mqtt_req_queue_get(&mqtt_client->req_queue, &pubrel_req);
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &pubrel_req);
 		if (!found)
 			return MQTT_INVALID_MSG_LEN;
 
@@ -131,6 +137,8 @@ int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client
 
 		TCPHandler_output(mqtt_client->pcb);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+
+		mqtt_req_queue_remove(&mqtt_client->req_queue);
 
 		return (tot_len - 1 - header.digits_remaining_len) - PUBREL_RESP_LEN;
 	}
