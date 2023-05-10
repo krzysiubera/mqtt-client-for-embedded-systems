@@ -126,10 +126,10 @@ int main(void)
   conn_opts.client_id = "stm krzysiu";
   conn_opts.username = NULL;
   conn_opts.password = NULL;
-  conn_opts.will_topic = "info/device";
-  conn_opts.will_msg = "stm disc";
-  conn_opts.will_qos = 0;
-  conn_opts.will_retain = false;
+  conn_opts.will_msg.topic = "info/device";
+  conn_opts.will_msg.payload = "I was disconnected";
+  conn_opts.will_msg.qos = 0;
+  conn_opts.will_msg.retain = false;
   conn_opts.keepalive_ms = 10000;  // 10 sec
 
   MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000, on_sub_completed_cb);

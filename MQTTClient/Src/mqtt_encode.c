@@ -11,10 +11,10 @@ static uint8_t protocol_version = 0x04;
 static uint32_t get_connect_packet_len(struct mqtt_client_connect_opts_t* conn_opts)
 {
 	uint32_t len = 10 + 2 + strlen(conn_opts->client_id);
-	if (conn_opts->will_topic)
-		len += (2 + strlen(conn_opts->will_topic));
-	if (conn_opts->will_msg)
-		len += (2 + strlen(conn_opts->will_msg));
+	if (conn_opts->will_msg.topic)
+		len += (2 + strlen(conn_opts->will_msg.topic));
+	if (conn_opts->will_msg.payload)
+		len += (2 + strlen(conn_opts->will_msg.payload));
 	if (conn_opts->username)
 		len += (2 + strlen(conn_opts->username));
 	if (conn_opts->password)
@@ -26,9 +26,9 @@ static uint8_t get_connect_flags(struct mqtt_client_connect_opts_t* conn_opts)
 {
 	return ((conn_opts->username ? 1 : 0) << 7) |
 			((conn_opts->password ? 1 : 0) << 6) |
-			(conn_opts->will_retain << 5) |
-            (conn_opts->will_qos << 4) |
-			((conn_opts->will_msg ? 1 : 0) << 2) |
+			(conn_opts->will_msg.retain << 5) |
+            (conn_opts->will_msg.qos << 4) |
+			((conn_opts->will_msg.payload ? 1 : 0) << 2) |
 			(CLEAN_SESSION << 1);
 }
 
@@ -70,10 +70,10 @@ void encode_mqtt_connect_msg(struct tcp_pcb* pcb, struct mqtt_client_connect_opt
 	send_u16(pcb, &keepalive_seconds);
 
 	send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->client_id, strlen(conn_opts->client_id));
-	if (conn_opts->will_topic)
-		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->will_topic, strlen(conn_opts->will_topic));
-	if (conn_opts->will_msg)
-		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->will_msg, strlen(conn_opts->will_msg));
+	if (conn_opts->will_msg.topic)
+		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->will_msg.topic, strlen(conn_opts->will_msg.topic));
+	if (conn_opts->will_msg.payload)
+		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->will_msg.payload, strlen(conn_opts->will_msg.payload));
 	if (conn_opts->username)
 		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->username, strlen(conn_opts->username));
 	if (conn_opts->password)

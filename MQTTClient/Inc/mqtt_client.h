@@ -30,10 +30,11 @@ struct mqtt_client_connect_opts_t
 	char* username;				// can be null
 	char* password;				// can be null, if username is null, then password must be null as well
 
-	char* will_topic;			// can be null
-	char* will_msg;				// if will_topic is not null, then will_msg must not be null
-	uint8_t will_qos;			// must be 0 if will_topic is null
-	bool will_retain;			// must be false if will_topic is null
+	/* topic can be null,
+	 * if topic is not null, then payload must not be null,
+	 * qos must be 0 if will_topic is null,
+	 * retain must be false if will_topic is null */
+	struct mqtt_pub_msg_t will_msg;
 	uint32_t keepalive_ms;		// required - max allowed value - 65 535 000
 };
 
