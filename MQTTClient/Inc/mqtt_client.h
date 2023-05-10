@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "mqtt_packets.h"
 #include "mqtt_req_queue.h"
+#include "mqtt_message.h"
 
 typedef void (*on_msg_received_cb_t)(struct mqtt_publish_resp_t* publish_resp);
 typedef uint32_t (*elapsed_time_cb_t)();
@@ -63,8 +64,8 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 uint32_t timeout_on_connect_response_ms,
 					 on_sub_completed_cb_t on_sub_completed_cb);
 enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client);
-enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain);
-enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos);
+enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, struct mqtt_pub_msg_t* pub_msg);
+enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, struct mqtt_sub_msg_t* sub_msg);
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
 void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_loop(struct mqtt_client_t* mqtt_client);

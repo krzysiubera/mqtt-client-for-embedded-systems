@@ -60,23 +60,23 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	return (mqtt_client->mqtt_connected) ? MQTT_SUCCESS : MQTT_CONNECTION_REFUSED_BY_BROKER;
 }
 
-enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, char* topic, char* msg, uint8_t qos, bool retain)
+enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, struct mqtt_pub_msg_t* pub_msg)
 {
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	encode_mqtt_publish_msg(mqtt_client->pcb, topic, msg, qos, retain, &mqtt_client->last_packet_id);
+	encode_mqtt_publish_msg(mqtt_client->pcb, pub_msg, &mqtt_client->last_packet_id);
 	uint16_t current_packet_id = mqtt_client->last_packet_id;
 
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	if (qos == 1)
+	if (pub_msg->qos == 1)
 	{
 		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=current_packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req);
 	}
-	else if (qos == 2)
+	else if (pub_msg->qos == 2)
 	{
 		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=current_packet_id };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req);
@@ -84,12 +84,12 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, cha
 	return MQTT_SUCCESS;
 }
 
-enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, char* topic, uint8_t qos)
+enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, struct mqtt_sub_msg_t* sub_msg)
 {
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	encode_mqtt_subscribe_msg(mqtt_client->pcb, topic, qos, &mqtt_client->last_packet_id);
+	encode_mqtt_subscribe_msg(mqtt_client->pcb, sub_msg, &mqtt_client->last_packet_id);
 	uint16_t current_packet_id = mqtt_client->last_packet_id;
 
 	TCPHandler_output(mqtt_client->pcb);

@@ -160,22 +160,31 @@ int main(void)
   }
 
 
-
   enum mqtt_client_err_t pub_rc[3];
-  pub_rc[0] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 0 msg", 0, false);
-  pub_rc[1] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 1 msg", 1, false);
-  pub_rc[2] = MQTTClient_publish(&mqtt_client, "sensor/temp", "qos 2 msg", 2, false);
+
+  struct mqtt_pub_msg_t pub_msg_qos_0 = { .topic="sensor/temp", .payload="qos 0 msg", .qos=0, .retain=false };
+  struct mqtt_pub_msg_t pub_msg_qos_1 = { .topic="sensor/temp", .payload="qos 1 msg", .qos=1, .retain=false };
+  struct mqtt_pub_msg_t pub_msg_qos_2 = { .topic="sensor/temp", .payload="qos 2 msg", .qos=2, .retain=false };
+
+  pub_rc[0] = MQTTClient_publish(&mqtt_client, &pub_msg_qos_0);
+  pub_rc[1] = MQTTClient_publish(&mqtt_client, &pub_msg_qos_1);
+  pub_rc[2] = MQTTClient_publish(&mqtt_client, &pub_msg_qos_2);
   printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 
+
   enum mqtt_client_err_t sub_rc[3];
-  sub_rc[0] = MQTTClient_subscribe(&mqtt_client, "drive/voltage", 0);
-  sub_rc[1] = MQTTClient_subscribe(&mqtt_client, "drive/current", 1);
-  sub_rc[2] = MQTTClient_subscribe(&mqtt_client, "drive/power", 2);
+
+  struct mqtt_sub_msg_t sub_voltage = { .topic="drive/voltage", .qos=0 };
+  struct mqtt_sub_msg_t sub_current = { .topic="drive/current", .qos=1 };
+  struct mqtt_sub_msg_t sub_power = { .topic="drive/power", .qos=2 };
+
+  sub_rc[0] = MQTTClient_subscribe(&mqtt_client, &sub_voltage);
+  sub_rc[1] = MQTTClient_subscribe(&mqtt_client, &sub_current);
+  sub_rc[2] = MQTTClient_subscribe(&mqtt_client, &sub_power);
   printf("Subscribed with rc: %d, %d, %d\n", sub_rc[0], sub_rc[1], sub_rc[2]);
 
-
-  MQTTClient_publish(&mqtt_client, "sensor/temp", "check if ok payload", 2, false);
-
+  struct mqtt_pub_msg_t new_msg = { .topic="sensor/temp", .payload="check if ok payload", .qos=2, .retain=false };
+  MQTTClient_publish(&mqtt_client, &new_msg);
 
   previous_time = HAL_GetTick();
   /* USER CODE END 2 */
@@ -192,9 +201,13 @@ int main(void)
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 20000 && mqtt_client.mqtt_connected)
 	  {
-		  pub_rc[0] = MQTTClient_publish(&mqtt_client, "sensor/temp", "25 celsius", 1, false);
-		  pub_rc[1] = MQTTClient_publish(&mqtt_client, "sensor/magnet", "5 uT", 0, false);
-		  pub_rc[2] = MQTTClient_publish(&mqtt_client, "sensor/acc", "5 g", 2, false);
+		  struct mqtt_pub_msg_t temp_msg = { .topic="sensor/temp", .payload="25 celsius", .qos=1, .retain=false };
+		  struct mqtt_pub_msg_t magnet_msg = { .topic="sensor/magnet", .payload="5 uT", .qos=0, .retain=false };
+		  struct mqtt_pub_msg_t acc_msg = { .topic="sensor/acc", .payload="5 g", .qos=2, .retain=false };
+
+		  pub_rc[0] = MQTTClient_publish(&mqtt_client, &temp_msg);
+		  pub_rc[1] = MQTTClient_publish(&mqtt_client, &magnet_msg);
+		  pub_rc[2] = MQTTClient_publish(&mqtt_client, &acc_msg);
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 	  }
