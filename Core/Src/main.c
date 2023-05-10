@@ -74,6 +74,18 @@ void on_msg_received_cb(struct mqtt_publish_resp_t* publish_resp)
 	printf("msg:%s at:%s\n", data_str, topic_str);
 }
 
+void on_sub_completed_cb(struct mqtt_suback_resp_t* suback_resp)
+{
+	if (suback_resp->suback_rc == 0x80)
+	{
+		printf("Failed to subscribe to topic\n");
+	}
+	else
+	{
+		printf("Subscribed to topic with ID %d. Max QOS %d\n", suback_resp->packet_id, suback_resp->suback_rc);
+	}
+}
+
 
 uint32_t current_time = 0;
 uint32_t previous_time = 0;
@@ -120,7 +132,7 @@ int main(void)
   conn_opts.will_retain = false;
   conn_opts.keepalive_ms = 10000;  // 10 sec
 
-  MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000);
+  MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000, on_sub_completed_cb);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
   if (connect_rc == MQTT_TIMEOUT_ON_CONNECT)
   {

@@ -95,6 +95,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 
 		mqtt_req_queue_remove(&mqtt_client->req_queue);
 
+		mqtt_client->on_sub_completed_cb(&suback_resp);
+
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - SUBACK_RESP_LEN;
 		return MQTT_SUCCESS;
 	}
