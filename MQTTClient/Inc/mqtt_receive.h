@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include "mqtt_client.h"
 
-#define MQTT_INVALID_MSG_LEN (-1)
-
-int32_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client);
+enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client,
+		                               uint32_t* bytes_left);
 
 #endif

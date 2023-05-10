@@ -13,8 +13,9 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 		tcp_recved(pcb, p->tot_len);
 		uint8_t* payload = (uint8_t*) p->payload;
 
-		int32_t bytes_left = get_mqtt_packet(payload, p->tot_len, mqtt_client);
-		if (bytes_left == MQTT_INVALID_MSG_LEN)
+		uint32_t bytes_left;	// will be filled in get_mqtt_packet func, so value not assigned here
+		enum mqtt_client_err_t rc = get_mqtt_packet(payload, p->tot_len, mqtt_client, &bytes_left);
+		if (rc != MQTT_SUCCESS)
 		{
 			tcp_close(mqtt_client->pcb);
 			mqtt_client->mqtt_connected = false;
@@ -22,9 +23,9 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 
 		while (bytes_left != 0)
 		{
-			uint32_t offset = p->tot_len - (uint32_t) bytes_left;
-			bytes_left = get_mqtt_packet(payload + offset, (uint32_t) bytes_left, mqtt_client);
-			if (bytes_left == MQTT_INVALID_MSG_LEN)
+			uint32_t offset = p->tot_len - bytes_left;
+			rc = get_mqtt_packet(payload + offset, bytes_left, mqtt_client, &bytes_left);
+			if (rc != MQTT_SUCCESS)
 			{
 				tcp_close(mqtt_client->pcb);
 				mqtt_client->mqtt_connected = false;
