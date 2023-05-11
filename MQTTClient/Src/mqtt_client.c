@@ -112,15 +112,16 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	}
 }
 
-void MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
+enum mqtt_client_err_t MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 {
 	if (!mqtt_client->mqtt_connected)
-		return;
+		return MQTT_NOT_CONNECTED;
 
 	encode_mqtt_disconnect_msg(mqtt_client->pcb);
 	TCPHandler_output(mqtt_client->pcb);
 	TCPHandler_close(mqtt_client->pcb);
 	mqtt_client->mqtt_connected = false;
+	return MQTT_SUCCESS;
 }
 
 void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
