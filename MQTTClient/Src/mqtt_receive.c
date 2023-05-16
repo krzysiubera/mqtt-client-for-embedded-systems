@@ -31,12 +31,13 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_ERROR_PARSING_MSG;
 
-		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=puback_resp.packet_id};
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &puback_req);
+		uint8_t idx_at_found;
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBACK_PACKET, puback_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_req_queue_remove(&mqtt_client->req_queue);
+		mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBACK_RESP_LEN;
 		return MQTT_SUCCESS;
@@ -48,8 +49,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_ERROR_PARSING_MSG;
 
-		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=pubrec_resp.packet_id };
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &pubrec_req);
+		uint8_t idx_at_found;
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBREC_PACKET, pubrec_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
@@ -58,8 +59,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		TCPHandler_output(mqtt_client->pcb);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-		struct mqtt_req_t pubcomp_req = { .packet_type=MQTT_PUBCOMP_PACKET, .packet_id=pubrec_resp.packet_id };
-		mqtt_req_queue_update(&mqtt_client->req_queue, &pubcomp_req);
+		mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBCOMP_PACKET, pubrec_resp.packet_id, &idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBREC_RESP_LEN;
 		return MQTT_SUCCESS;
@@ -71,12 +71,13 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_ERROR_PARSING_MSG;
 
-		struct mqtt_req_t pubcomp_req = { .packet_type=MQTT_PUBCOMP_PACKET, .packet_id=pubcomp_resp.packet_id };
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &pubcomp_req);
+		uint8_t idx_at_found;
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBREL_PACKET, pubcomp_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_req_queue_remove(&mqtt_client->req_queue);
+		mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBCOMP_RESP_LEN;
 		return MQTT_SUCCESS;
@@ -88,14 +89,13 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_ERROR_PARSING_MSG;
 
-		struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=suback_resp.packet_id };
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &suback_req);
+		uint8_t idx_at_found;
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_SUBACK_PACKET, suback_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_req_queue_remove(&mqtt_client->req_queue);
-
-		mqtt_client->on_sub_completed_cb(&suback_resp);
+		mqtt_client->on_sub_completed_cb(&suback_resp, &mqtt_client->req_queue.requests[idx_at_found].context);
+		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - SUBACK_RESP_LEN;
 		return MQTT_SUCCESS;
@@ -107,14 +107,21 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_client->on_msg_received_cb(&publish_resp);
+		union mqtt_context_t pub_context;
+		create_mqtt_context_from_pub_response(&pub_context, &publish_resp);
 
-		if (publish_resp.qos == 1)
+		if (publish_resp.qos == 0)
+		{
+			mqtt_client->on_msg_received_cb(&pub_context);
+		}
+		else if (publish_resp.qos == 1)
 		{
 			encode_mqtt_puback_msg(mqtt_client->pcb, &publish_resp.packet_id);
 
 			TCPHandler_output(mqtt_client->pcb);
 			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+
+			mqtt_client->on_msg_received_cb(&pub_context);
 		}
 		else if (publish_resp.qos == 2)
 		{
@@ -123,7 +130,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			TCPHandler_output(mqtt_client->pcb);
 			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-			struct mqtt_req_t pubrel_req = { .packet_type=MQTT_PUBREL_PACKET, .packet_id=publish_resp.packet_id };
+			struct mqtt_req_t pubrel_req = { .packet_type=MQTT_PUBREL_PACKET, .packet_id=publish_resp.packet_id, .context=pub_context, .active=true };
 			mqtt_req_queue_add(&mqtt_client->req_queue, &pubrel_req);
 		}
 
@@ -137,8 +144,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_ERROR_PARSING_MSG;
 
-		struct mqtt_req_t pubrel_req = { .packet_type=MQTT_PUBREL_PACKET, .packet_id=pubrel_resp.packet_id };
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, &pubrel_req);
+		uint8_t idx_at_found;
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBCOMP_PACKET, pubrel_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
@@ -147,7 +154,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		TCPHandler_output(mqtt_client->pcb);
 		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-		mqtt_req_queue_remove(&mqtt_client->req_queue);
+		mqtt_client->on_msg_received_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBREL_RESP_LEN;
 		return MQTT_SUCCESS;

@@ -61,29 +61,26 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void on_msg_received_cb(struct mqtt_publish_resp_t* publish_resp)
+void on_msg_received_cb(union mqtt_context_t* context)
 {
-	uint8_t topic_str[publish_resp->topic_len + 1];
-	memcpy(topic_str, publish_resp->topic, publish_resp->topic_len);
-	topic_str[publish_resp->topic_len] = '\0';
-
-	uint8_t data_str[publish_resp->data_len + 1];
-	memcpy(data_str, publish_resp->data, publish_resp->data_len);
-	data_str[publish_resp->data_len] = '\0';
-
-	printf("msg:%s at:%s\n", data_str, topic_str);
+	printf("Received message from topic: %s : %s, payload len: %d\n", context->pub.topic, context->pub.payload, context->pub.payload_len);
 }
 
-void on_sub_completed_cb(struct mqtt_suback_resp_t* suback_resp)
+void on_sub_completed_cb(struct mqtt_suback_resp_t* suback_resp, union mqtt_context_t* context)
 {
 	if (suback_resp->suback_rc == 0x80)
 	{
-		printf("Failed to subscribe to topic\n");
+		printf("Failed to subscribe to topic: %s\n", context->sub.topic);
 	}
 	else
 	{
-		printf("Subscribed to topic with ID %d. Max QOS %d\n", suback_resp->packet_id, suback_resp->suback_rc);
+		printf("Subscribed to topic: %s with max QOS: %d\n", context->sub.topic, suback_resp->suback_rc);
 	}
+}
+
+void on_pub_completed_cb(union mqtt_context_t* context)
+{
+	printf("Publish msg: %s to topic: %s completed\n", context->pub.payload, context->pub.topic);
 }
 
 
@@ -132,7 +129,7 @@ int main(void)
   conn_opts.will_msg.retain = false;
   conn_opts.keepalive_ms = 10000;  // 10 sec
 
-  MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000, on_sub_completed_cb);
+  MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000, on_sub_completed_cb, on_pub_completed_cb);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
   if (connect_rc == MQTT_TIMEOUT_ON_CONNECT)
   {
@@ -201,6 +198,7 @@ int main(void)
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 20000 && mqtt_client.mqtt_connected)
 	  {
+		  /*
 		  struct mqtt_pub_msg_t temp_msg = { .topic="sensor/temp", .payload="25 celsius", .qos=1, .retain=false };
 		  struct mqtt_pub_msg_t magnet_msg = { .topic="sensor/magnet", .payload="5 uT", .qos=0, .retain=false };
 		  struct mqtt_pub_msg_t acc_msg = { .topic="sensor/acc", .payload="5 g", .qos=2, .retain=false };
@@ -210,6 +208,7 @@ int main(void)
 		  pub_rc[2] = MQTTClient_publish(&mqtt_client, &acc_msg);
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
+		  */
 	  }
   }
   /* USER CODE END 3 */

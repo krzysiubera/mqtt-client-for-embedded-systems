@@ -5,10 +5,12 @@
 #include "mqtt_packets.h"
 #include "mqtt_req_queue.h"
 #include "mqtt_message.h"
+#include "mqtt_context.h"
 
-typedef void (*on_msg_received_cb_t)(struct mqtt_publish_resp_t* publish_resp);
+typedef void (*on_msg_received_cb_t)(union mqtt_context_t* context);
 typedef uint32_t (*elapsed_time_cb_t)();
-typedef void (*on_sub_completed_cb_t)(struct mqtt_suback_resp_t* suback_resp);
+typedef void (*on_sub_completed_cb_t)(struct mqtt_suback_resp_t* suback_resp, union mqtt_context_t* context);
+typedef void (*on_pub_completed_cb_t)(union mqtt_context_t* context);
 
 enum mqtt_client_err_t
 {
@@ -22,7 +24,6 @@ enum mqtt_client_err_t
 	MQTT_CONNECTION_REFUSED_BY_BROKER = 7,
 	MQTT_ERROR_PARSING_MSG = 8
 };
-
 
 struct mqtt_client_connect_opts_t
 {
@@ -51,6 +52,7 @@ struct mqtt_client_t
 	bool connack_resp_available;
 	on_msg_received_cb_t on_msg_received_cb;
 	on_sub_completed_cb_t on_sub_completed_cb;
+	on_pub_completed_cb_t on_pub_completed_cb;
 	uint32_t last_activity;
 	elapsed_time_cb_t elapsed_time_cb;
 	uint32_t timeout_on_connect_response_ms;
@@ -63,7 +65,8 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts,
 					 uint32_t timeout_on_connect_response_ms,
-					 on_sub_completed_cb_t on_sub_completed_cb);
+					 on_sub_completed_cb_t on_sub_completed_cb,
+					 on_pub_completed_cb_t on_pub_completed_cb);
 enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, struct mqtt_pub_msg_t* pub_msg);
 enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, struct mqtt_sub_msg_t* sub_msg);

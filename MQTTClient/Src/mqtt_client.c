@@ -17,7 +17,8 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 struct mqtt_client_connect_opts_t* conn_opts,
 					 uint32_t timeout_on_connect_response_ms,
-					 on_sub_completed_cb_t on_sub_completed_cb)
+					 on_sub_completed_cb_t on_sub_completed_cb,
+					 on_pub_completed_cb_t on_pub_completed_cb)
 {
 	mqtt_client->conn_opts = conn_opts;
 	mqtt_client->last_packet_id = 0;
@@ -30,6 +31,7 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
 	mqtt_client->on_sub_completed_cb = on_sub_completed_cb;
+	mqtt_client->on_pub_completed_cb = on_pub_completed_cb;
 
 	mqtt_req_queue_init(&mqtt_client->req_queue);
 }
@@ -73,12 +75,16 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, str
 
 	if (pub_msg->qos == 1)
 	{
-		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=current_packet_id };
+		union mqtt_context_t pub_context;
+		save_mqtt_pub_context(&pub_context, pub_msg);
+		struct mqtt_req_t puback_req = { .packet_type=MQTT_PUBACK_PACKET, .packet_id=current_packet_id, .context=pub_context, .active=true };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req);
 	}
 	else if (pub_msg->qos == 2)
 	{
-		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=current_packet_id };
+		union mqtt_context_t pub_context;
+		save_mqtt_pub_context(&pub_context, pub_msg);
+		struct mqtt_req_t pubrec_req = { .packet_type=MQTT_PUBREC_PACKET, .packet_id=current_packet_id, .context=pub_context, .active=true };
 		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req);
 	}
 	return MQTT_SUCCESS;
@@ -95,7 +101,9 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, s
 	TCPHandler_output(mqtt_client->pcb);
 	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-	struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=current_packet_id };
+	union mqtt_context_t sub_context;
+	save_mqtt_sub_context(&sub_context, sub_msg);
+	struct mqtt_req_t suback_req = { .packet_type=MQTT_SUBACK_PACKET, .packet_id=current_packet_id, .context=sub_context, .active=true };
 	mqtt_req_queue_add(&mqtt_client->req_queue, &suback_req);
 
 	return MQTT_SUCCESS;

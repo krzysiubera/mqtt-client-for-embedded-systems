@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include "mqtt_client.h"
 #include "tcp_connection_raw.h"
-#include "mqtt_message.h"
 
 void encode_mqtt_connect_msg(struct tcp_pcb* pcb, struct mqtt_client_connect_opts_t* conn_opts);
 void encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg, uint16_t* last_packet_id);
