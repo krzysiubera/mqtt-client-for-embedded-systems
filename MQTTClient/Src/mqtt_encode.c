@@ -8,7 +8,7 @@
 static char* protocol_name = "MQTT";
 static uint8_t protocol_version = 0x04;
 
-static uint32_t get_connect_packet_len(struct mqtt_client_connect_opts_t* conn_opts)
+static uint32_t get_connect_packet_len(const struct mqtt_client_connect_opts_t* conn_opts)
 {
 	uint32_t len = 10 + 2 + strlen(conn_opts->client_id);
 	if (conn_opts->will_msg.topic)
@@ -22,7 +22,7 @@ static uint32_t get_connect_packet_len(struct mqtt_client_connect_opts_t* conn_o
 	return len;
 }
 
-static uint8_t get_connect_flags(struct mqtt_client_connect_opts_t* conn_opts)
+static uint8_t get_connect_flags(const struct mqtt_client_connect_opts_t* conn_opts)
 {
 	return ((conn_opts->username ? 1 : 0) << 7) |
 			((conn_opts->password ? 1 : 0) << 6) |
@@ -55,7 +55,7 @@ static uint16_t get_packet_id(uint16_t* last_packet_id)
 	return (*last_packet_id);
 }
 
-void encode_mqtt_connect_msg(struct tcp_pcb* pcb, struct mqtt_client_connect_opts_t* conn_opts)
+void encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_connect_opts_t* conn_opts)
 {
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
 	uint32_t remaining_len = get_connect_packet_len(conn_opts);

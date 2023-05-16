@@ -49,7 +49,16 @@
 
 /* USER CODE BEGIN PV */
 struct mqtt_client_t mqtt_client;
-struct mqtt_client_connect_opts_t conn_opts;
+const struct mqtt_client_connect_opts_t conn_opts = {
+	.client_id="stm krzysiu",
+	.username=NULL,
+	.password=NULL,
+	.will_msg.topic="info/device",
+	.will_msg.payload = "I was disconnected",
+	.will_msg.qos = 0,
+	.will_msg.retain = false,
+	.keepalive_ms = 10000
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -119,15 +128,6 @@ int main(void)
   MX_GPIO_Init();
   MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
-
-  conn_opts.client_id = "stm krzysiu";
-  conn_opts.username = NULL;
-  conn_opts.password = NULL;
-  conn_opts.will_msg.topic = "info/device";
-  conn_opts.will_msg.payload = "I was disconnected";
-  conn_opts.will_msg.qos = 0;
-  conn_opts.will_msg.retain = false;
-  conn_opts.keepalive_ms = 10000;  // 10 sec
 
   MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000, on_sub_completed_cb, on_pub_completed_cb);
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);

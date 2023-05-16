@@ -19,7 +19,7 @@ void wait_for_connack(struct mqtt_client_t* mqtt_client)
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 					 on_msg_received_cb_t on_msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
-					 struct mqtt_client_connect_opts_t* conn_opts,
+					 const struct mqtt_client_connect_opts_t* conn_opts,
 					 uint32_t timeout_on_connect_response_ms,
 					 on_sub_completed_cb_t on_sub_completed_cb,
 					 on_pub_completed_cb_t on_pub_completed_cb)
