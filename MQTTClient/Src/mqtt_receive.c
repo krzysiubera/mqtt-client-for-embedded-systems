@@ -36,7 +36,9 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+		if (mqtt_client->on_pub_completed_cb)
+			mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+
 		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBACK_RESP_LEN;
@@ -76,7 +78,9 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+		if (mqtt_client->on_pub_completed_cb)
+			mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
+
 		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBCOMP_RESP_LEN;
@@ -94,7 +98,9 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (!found)
 			return MQTT_ERROR_PARSING_MSG;
 
-		mqtt_client->on_sub_completed_cb(&suback_resp, &mqtt_client->req_queue.requests[idx_at_found].context);
+		if (mqtt_client->on_sub_completed_cb)
+			mqtt_client->on_sub_completed_cb(&suback_resp, &mqtt_client->req_queue.requests[idx_at_found].context);
+
 		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - SUBACK_RESP_LEN;

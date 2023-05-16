@@ -17,12 +17,9 @@ void wait_for_connack(struct mqtt_client_t* mqtt_client)
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
-					 on_msg_received_cb_t on_msg_received_cb,
 		             elapsed_time_cb_t elapsed_time_cb,
 					 const struct mqtt_client_connect_opts_t* conn_opts,
-					 uint32_t timeout_on_connect_response_ms,
-					 on_sub_completed_cb_t on_sub_completed_cb,
-					 on_pub_completed_cb_t on_pub_completed_cb)
+					 uint32_t timeout_on_connect_response_ms)
 {
 	mqtt_client->conn_opts = conn_opts;
 	mqtt_client->last_packet_id = 0;
@@ -30,14 +27,29 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->pcb = NULL;
 	memset(&mqtt_client->connack_resp, 0, sizeof(mqtt_client->connack_resp));
 	mqtt_client->connack_resp_available = false;
-	mqtt_client->on_msg_received_cb = on_msg_received_cb;
+	mqtt_client->on_msg_received_cb = NULL;
 	mqtt_client->last_activity = 0;
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
-	mqtt_client->on_sub_completed_cb = on_sub_completed_cb;
-	mqtt_client->on_pub_completed_cb = on_pub_completed_cb;
+	mqtt_client->on_sub_completed_cb = NULL;
+	mqtt_client->on_pub_completed_cb = NULL;
 
 	mqtt_req_queue_init(&mqtt_client->req_queue);
+}
+
+void MQTTClient_set_cb_on_msg_received(struct mqtt_client_t* mqtt_client, on_msg_received_cb_t on_msg_received_cb)
+{
+	mqtt_client->on_msg_received_cb = on_msg_received_cb;
+}
+
+void MQTTClient_set_cb_on_sub_completed(struct mqtt_client_t* mqtt_client, on_sub_completed_cb_t on_sub_completed_cb)
+{
+	mqtt_client->on_sub_completed_cb = on_sub_completed_cb;
+}
+
+void MQTTClient_set_cb_on_pub_completed(struct mqtt_client_t* mqtt_client, on_pub_completed_cb_t on_pub_completed_cb)
+{
+	mqtt_client->on_pub_completed_cb = on_pub_completed_cb;
 }
 
 enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)

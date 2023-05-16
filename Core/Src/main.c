@@ -129,7 +129,11 @@ int main(void)
   MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
 
-  MQTTClient_init(&mqtt_client, on_msg_received_cb, HAL_GetTick, &conn_opts, 5000, on_sub_completed_cb, on_pub_completed_cb);
+  MQTTClient_init(&mqtt_client, HAL_GetTick, &conn_opts, 5000);
+  MQTTClient_set_cb_on_msg_received(&mqtt_client, on_msg_received_cb);
+  MQTTClient_set_cb_on_sub_completed(&mqtt_client, on_sub_completed_cb);
+  MQTTClient_set_cb_on_pub_completed(&mqtt_client, on_pub_completed_cb);
+
   enum mqtt_client_err_t connect_rc = MQTTClient_connect(&mqtt_client);
   if (connect_rc == MQTT_TIMEOUT_ON_CONNECT)
   {
