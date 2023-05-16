@@ -198,7 +198,6 @@ int main(void)
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 20000 && mqtt_client.mqtt_connected)
 	  {
-		  /*
 		  struct mqtt_pub_msg_t temp_msg = { .topic="sensor/temp", .payload="25 celsius", .qos=1, .retain=false };
 		  struct mqtt_pub_msg_t magnet_msg = { .topic="sensor/magnet", .payload="5 uT", .qos=0, .retain=false };
 		  struct mqtt_pub_msg_t acc_msg = { .topic="sensor/acc", .payload="5 g", .qos=2, .retain=false };
@@ -208,7 +207,6 @@ int main(void)
 		  pub_rc[2] = MQTTClient_publish(&mqtt_client, &acc_msg);
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
-		  */
 	  }
   }
   /* USER CODE END 3 */
