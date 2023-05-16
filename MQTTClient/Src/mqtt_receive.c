@@ -118,7 +118,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 
 		if (publish_resp.qos == 0)
 		{
-			mqtt_client->on_msg_received_cb(&pub_context);
+			if (mqtt_client->on_msg_received_cb)
+				mqtt_client->on_msg_received_cb(&pub_context);
 		}
 		else if (publish_resp.qos == 1)
 		{
@@ -127,7 +128,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			TCPHandler_output(mqtt_client->pcb);
 			mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
 
-			mqtt_client->on_msg_received_cb(&pub_context);
+			if (mqtt_client->on_msg_received_cb)
+				mqtt_client->on_msg_received_cb(&pub_context);
 		}
 		else if (publish_resp.qos == 2)
 		{
