@@ -20,15 +20,17 @@ static err_t tcp_received_cb(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
 			tcp_close(mqtt_client->pcb);
 			mqtt_client->mqtt_connected = false;
 		}
-
-		while (bytes_left != 0)
+		else
 		{
-			uint32_t offset = p->tot_len - bytes_left;
-			rc = get_mqtt_packet(payload + offset, bytes_left, mqtt_client, &bytes_left);
-			if (rc != MQTT_SUCCESS)
+			while (bytes_left != 0)
 			{
-				tcp_close(mqtt_client->pcb);
-				mqtt_client->mqtt_connected = false;
+				uint32_t offset = p->tot_len - bytes_left;
+				rc = get_mqtt_packet(payload + offset, bytes_left, mqtt_client, &bytes_left);
+				if (rc != MQTT_SUCCESS)
+				{
+					tcp_close(mqtt_client->pcb);
+					mqtt_client->mqtt_connected = false;
+				}
 			}
 		}
 	}
