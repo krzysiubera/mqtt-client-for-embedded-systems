@@ -113,3 +113,12 @@ enum mqtt_client_err_t decode_pubrel_resp(uint8_t* mqtt_data, struct mqtt_header
 	pubrel_resp->packet_id = (mqtt_data[2] << 8) | (mqtt_data[3]);
 	return MQTT_SUCCESS;
 }
+
+enum mqtt_client_err_t decode_unsuback_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_unsuback_resp_t* unsuback_resp)
+{
+	if ((header->remaining_len != UNSUBACK_RESP_LEN) || (header->flags != 0))
+		return MQTT_INVALID_MSG;
+
+	unsuback_resp->packet_id = (mqtt_data[2] << 8) | (mqtt_data[3]);
+	return MQTT_SUCCESS;
+}

@@ -71,6 +71,7 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, s
 void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
 enum mqtt_client_err_t MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
 void MQTTClient_loop(struct mqtt_client_t* mqtt_client);
+enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client, struct mqtt_unsub_msg_t* unsub_msg);
 
 
 #endif

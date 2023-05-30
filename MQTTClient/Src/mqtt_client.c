@@ -160,3 +160,19 @@ void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
 		MQTTClient_connect(mqtt_client);
 	}
 }
+
+enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client, struct mqtt_unsub_msg_t* unsub_msg)
+{
+	if (!mqtt_client->mqtt_connected)
+		return MQTT_NOT_CONNECTED;
+
+	encode_mqtt_unsubscribe_msg(mqtt_client->pcb, unsub_msg, &mqtt_client->last_packet_id);
+	uint16_t current_packet_id = mqtt_client->last_packet_id;
+
+	TCPHandler_output(mqtt_client->pcb);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+
+	struct mqtt_req_t unsuback_req = { .packet_type=MQTT_UNSUBACK_PACKET, .packet_id=current_packet_id, .active=true};
+	mqtt_req_queue_add(&mqtt_client->req_queue, &unsuback_req);
+	return MQTT_SUCCESS;
+}

@@ -11,6 +11,7 @@
 #define PUBCOMP_RESP_LEN 2
 #define PUBREL_RESP_LEN 2
 #define SUBACK_RESP_LEN 3
+#define UNSUBACK_RESP_LEN 2
 
 struct mqtt_header_t decode_mqtt_header(uint8_t* mqtt_data);
 enum mqtt_client_err_t decode_connack_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_connack_resp_t* connack_resp);
@@ -20,5 +21,6 @@ enum mqtt_client_err_t decode_pubcomp_resp(uint8_t* mqtt_data, struct mqtt_heade
 enum mqtt_client_err_t decode_suback_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_suback_resp_t* suback_resp);
 enum mqtt_client_err_t decode_publish_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_publish_resp_t* publish_resp);
 enum mqtt_client_err_t decode_pubrel_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_pubrel_resp_t* pubrel_resp);
+enum mqtt_client_err_t decode_unsuback_resp(uint8_t* mqtt_data, struct mqtt_header_t* header, struct mqtt_unsuback_resp_t* unsuback_resp);
 
 #endif

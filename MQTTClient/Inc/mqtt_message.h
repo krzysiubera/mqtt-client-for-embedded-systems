@@ -15,4 +15,9 @@ struct mqtt_sub_msg_t
 	uint8_t qos;
 };
 
+struct mqtt_unsub_msg_t
+{
+	char* topic;
+};
+
 #endif

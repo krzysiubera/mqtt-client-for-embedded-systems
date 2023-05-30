@@ -168,6 +168,23 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - PUBREL_RESP_LEN;
 		return MQTT_SUCCESS;
 	}
+	case MQTT_UNSUBACK_PACKET:
+	{
+		struct mqtt_unsuback_resp_t unsuback_resp;
+		enum mqtt_client_err_t rc = decode_unsuback_resp(mqtt_data, &header, &unsuback_resp);
+		if (rc != MQTT_SUCCESS)
+			return MQTT_ERROR_PARSING_MSG;
+
+		uint8_t idx_at_found;
+		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_UNSUBACK_PACKET, unsuback_resp.packet_id, &idx_at_found);
+		if (!found)
+			return MQTT_ERROR_PARSING_MSG;
+
+		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
+
+		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - UNSUBACK_RESP_LEN;
+		return MQTT_SUCCESS;
+	}
 	default:
 	{
 		*bytes_left = 0;

@@ -14,5 +14,6 @@ void encode_mqtt_pubrel_msg(struct tcp_pcb* pcb, uint16_t* packet_id);
 void encode_mqtt_puback_msg(struct tcp_pcb* pcb, uint16_t* packet_id);
 void encode_mqtt_pubrec_msg(struct tcp_pcb* pcb, uint16_t* packet_id);
 void encode_mqtt_pubcomp_msg(struct tcp_pcb* pcb, uint16_t* packet_id);
+void encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg, uint16_t* last_packet_id);
 
 #endif

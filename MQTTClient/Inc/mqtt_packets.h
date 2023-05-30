@@ -73,4 +73,9 @@ struct mqtt_pubrel_resp_t
 	uint16_t packet_id;
 };
 
+struct mqtt_unsuback_resp_t
+{
+	uint16_t packet_id;
+};
+
 #endif

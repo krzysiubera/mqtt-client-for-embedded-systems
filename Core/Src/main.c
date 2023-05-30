@@ -211,6 +211,9 @@ int main(void)
 		  pub_rc[2] = MQTTClient_publish(&mqtt_client, &acc_msg);
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
+
+		  struct mqtt_unsub_msg_t unsub_msg = { .topic="drive/power" };
+		  MQTTClient_unsubscribe(&mqtt_client, &unsub_msg);
 	  }
   }
   /* USER CODE END 3 */

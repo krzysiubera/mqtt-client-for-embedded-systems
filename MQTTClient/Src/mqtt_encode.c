@@ -45,6 +45,11 @@ static uint32_t get_subscribe_packet_len(char* topic)
 	return 2 + 2 + strlen(topic) + 1;
 }
 
+static uint32_t get_unsubscribe_packet_len(char* topic)
+{
+	return 2 + 2 + strlen(topic);
+}
+
 static uint16_t get_packet_id(uint16_t* last_packet_id)
 {
 	if ((*last_packet_id) == 65535)
@@ -140,4 +145,15 @@ void encode_mqtt_pubcomp_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
 {
 	send_fixed_header(pcb, MQTT_PUBCOMP_PACKET, 2);
 	send_u16(pcb, packet_id);
+}
+
+void encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg, uint16_t* last_packet_id)
+{
+	uint32_t remaining_len = get_unsubscribe_packet_len(unsub_msg->topic);
+	uint8_t ctrl_field = (MQTT_UNSUBSCRIBE_PACKET | 0x02);
+	send_fixed_header(pcb, ctrl_field, remaining_len);
+
+	uint16_t current_packet_id = get_packet_id(last_packet_id);
+	send_u16(pcb, &current_packet_id);
+	send_utf8_encoded_str(pcb, (uint8_t*) unsub_msg->topic, strlen(unsub_msg->topic));
 }
