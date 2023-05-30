@@ -155,10 +155,6 @@ void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
 	{
 		MQTTClient_keepalive(mqtt_client);
 	}
-	else
-	{
-		MQTTClient_connect(mqtt_client);
-	}
 }
 
 enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client, struct mqtt_unsub_msg_t* unsub_msg)
