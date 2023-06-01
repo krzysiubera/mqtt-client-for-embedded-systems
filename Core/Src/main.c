@@ -212,6 +212,9 @@ int main(void)
 		  previous_time = current_time;
 		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 
+		  struct mqtt_pub_msg_t status_msg = { .topic="info/device", .payload="ok", .qos=2, .retain=false };
+		  MQTTClient_publish(&mqtt_client, &status_msg);
+
 		  struct mqtt_unsub_msg_t unsub_msg = { .topic="drive/power" };
 		  MQTTClient_unsubscribe(&mqtt_client, &unsub_msg);
 	  }
