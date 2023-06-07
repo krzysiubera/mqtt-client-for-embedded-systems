@@ -27,14 +27,17 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->pcb = NULL;
 	memset(&mqtt_client->connack_resp, 0, sizeof(mqtt_client->connack_resp));
 	mqtt_client->connack_resp_available = false;
-	mqtt_client->on_msg_received_cb = NULL;
 	mqtt_client->last_activity = 0;
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
-	mqtt_client->on_sub_completed_cb = NULL;
-	mqtt_client->on_pub_completed_cb = NULL;
-
 	mqtt_req_queue_init(&mqtt_client->req_queue);
+}
+
+void MQTTClient_clear_callbacks(struct mqtt_client_t* mqtt_client)
+{
+	mqtt_client->on_msg_received_cb = NULL;
+	mqtt_client->on_pub_completed_cb = NULL;
+	mqtt_client->on_sub_completed_cb = NULL;
 }
 
 void MQTTClient_set_cb_on_msg_received(struct mqtt_client_t* mqtt_client, on_msg_received_cb_t on_msg_received_cb)

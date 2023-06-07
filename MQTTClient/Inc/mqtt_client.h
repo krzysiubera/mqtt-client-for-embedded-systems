@@ -44,9 +44,7 @@ struct mqtt_client_t
 	const struct mqtt_client_connect_opts_t* conn_opts;
 	uint16_t last_packet_id;
 	bool mqtt_connected;
-
 	struct tcp_pcb* pcb;
-
 	struct mqtt_connack_resp_t connack_resp;
 	bool connack_resp_available;
 	on_msg_received_cb_t on_msg_received_cb;
@@ -55,12 +53,12 @@ struct mqtt_client_t
 	uint32_t last_activity;
 	elapsed_time_cb_t elapsed_time_cb;
 	uint32_t timeout_on_connect_response_ms;
-
 	struct mqtt_req_queue_t req_queue;
 };
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, elapsed_time_cb_t elapsed_time_cb,
 					 const struct mqtt_client_connect_opts_t* conn_opts, uint32_t timeout_on_connect_response_ms);
+void MQTTClient_clear_callbacks(struct mqtt_client_t* mqtt_client);
 void MQTTClient_set_cb_on_msg_received(struct mqtt_client_t* mqtt_client, on_msg_received_cb_t on_msg_received_cb);
 void MQTTClient_set_cb_on_sub_completed(struct mqtt_client_t* mqtt_client, on_sub_completed_cb_t on_sub_completed_cb);
 void MQTTClient_set_cb_on_pub_completed(struct mqtt_client_t* mqtt_client, on_pub_completed_cb_t on_pub_completed_cb);
