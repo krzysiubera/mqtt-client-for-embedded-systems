@@ -7,13 +7,13 @@
 
 void wait_for_connack(struct mqtt_client_t* mqtt_client)
 {
-	uint32_t last_check_time = mqtt_client->elapsed_time_cb();
-	bool expired = (mqtt_client->elapsed_time_cb() - last_check_time > mqtt_client->timeout_on_connect_response_ms);
-	while ((!mqtt_client->connack_resp_available) && !expired)
+	bool expired = false;
+	uint32_t entry_time_ms = mqtt_client->elapsed_time_cb();
+	do
 	{
 		TCPHandler_process_lwip_packets();
-		last_check_time = mqtt_client->elapsed_time_cb();
-	}
+		expired = (mqtt_client->elapsed_time_cb() - entry_time_ms > mqtt_client->timeout_on_connect_response_ms);
+	} while ((!mqtt_client->connack_resp_available) && (!expired));
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client,
