@@ -31,10 +31,6 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client,
 	mqtt_client->elapsed_time_cb = elapsed_time_cb;
 	mqtt_client->timeout_on_connect_response_ms = timeout_on_connect_response_ms;
 	mqtt_req_queue_init(&mqtt_client->req_queue);
-}
-
-void MQTTClient_clear_callbacks(struct mqtt_client_t* mqtt_client)
-{
 	mqtt_client->on_msg_received_cb = NULL;
 	mqtt_client->on_pub_completed_cb = NULL;
 	mqtt_client->on_sub_completed_cb = NULL;
