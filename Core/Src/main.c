@@ -160,29 +160,21 @@ int main(void)
 	  printf("Connected to MQTT broker successfully\n");
   }
 
-
-  enum mqtt_client_err_t pub_rc[3];
-
   struct mqtt_pub_msg_t pub_msg_qos_0 = { .topic="sensor/temp", .payload="qos 0 msg", .qos=0, .retain=false };
   struct mqtt_pub_msg_t pub_msg_qos_1 = { .topic="sensor/temp", .payload="qos 1 msg", .qos=1, .retain=false };
   struct mqtt_pub_msg_t pub_msg_qos_2 = { .topic="sensor/temp", .payload="qos 2 msg", .qos=2, .retain=false };
 
-  pub_rc[0] = MQTTClient_publish(&mqtt_client, &pub_msg_qos_0);
-  pub_rc[1] = MQTTClient_publish(&mqtt_client, &pub_msg_qos_1);
-  pub_rc[2] = MQTTClient_publish(&mqtt_client, &pub_msg_qos_2);
-  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
-
-
-  enum mqtt_client_err_t sub_rc[3];
+  MQTTClient_publish(&mqtt_client, &pub_msg_qos_0);
+  MQTTClient_publish(&mqtt_client, &pub_msg_qos_1);
+  MQTTClient_publish(&mqtt_client, &pub_msg_qos_2);
 
   struct mqtt_sub_msg_t sub_voltage = { .topic="drive/voltage", .qos=0 };
   struct mqtt_sub_msg_t sub_current = { .topic="drive/current", .qos=1 };
   struct mqtt_sub_msg_t sub_power = { .topic="drive/power", .qos=2 };
 
-  sub_rc[0] = MQTTClient_subscribe(&mqtt_client, &sub_voltage);
-  sub_rc[1] = MQTTClient_subscribe(&mqtt_client, &sub_current);
-  sub_rc[2] = MQTTClient_subscribe(&mqtt_client, &sub_power);
-  printf("Subscribed with rc: %d, %d, %d\n", sub_rc[0], sub_rc[1], sub_rc[2]);
+  MQTTClient_subscribe(&mqtt_client, &sub_voltage);
+  MQTTClient_subscribe(&mqtt_client, &sub_current);
+  MQTTClient_subscribe(&mqtt_client, &sub_power);
 
   struct mqtt_pub_msg_t new_msg = { .topic="sensor/temp", .payload="check if ok payload", .qos=2, .retain=false };
   MQTTClient_publish(&mqtt_client, &new_msg);
@@ -206,17 +198,13 @@ int main(void)
 		  struct mqtt_pub_msg_t magnet_msg = { .topic="sensor/magnet", .payload="5 uT", .qos=0, .retain=false };
 		  struct mqtt_pub_msg_t acc_msg = { .topic="sensor/acc", .payload="5 g", .qos=2, .retain=false };
 
-		  pub_rc[0] = MQTTClient_publish(&mqtt_client, &temp_msg);
-		  pub_rc[1] = MQTTClient_publish(&mqtt_client, &magnet_msg);
-		  pub_rc[2] = MQTTClient_publish(&mqtt_client, &acc_msg);
+		  MQTTClient_publish(&mqtt_client, &temp_msg);
+		  MQTTClient_publish(&mqtt_client, &magnet_msg);
+		  MQTTClient_publish(&mqtt_client, &acc_msg);
 		  previous_time = current_time;
-		  printf("Published with rc: %d, %d, %d\n", pub_rc[0], pub_rc[1], pub_rc[2]);
 
 		  struct mqtt_pub_msg_t status_msg = { .topic="info/device", .payload="ok", .qos=2, .retain=false };
 		  MQTTClient_publish(&mqtt_client, &status_msg);
-
-		  struct mqtt_unsub_msg_t unsub_msg = { .topic="drive/power" };
-		  MQTTClient_unsubscribe(&mqtt_client, &unsub_msg);
 	  }
   }
   /* USER CODE END 3 */

@@ -16,7 +16,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_connack_resp_t connack_resp;
 		enum mqtt_client_err_t rc = decode_connack_resp(mqtt_data, &header, &connack_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		mqtt_client->connack_resp = connack_resp;
 		mqtt_client->connack_resp_available = true;
@@ -29,12 +29,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_puback_resp_t puback_resp;
 		enum mqtt_client_err_t rc = decode_puback_resp(mqtt_data, &header, &puback_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
 		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBACK_PACKET, puback_resp.packet_id, &idx_at_found);
 		if (!found)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		if (mqtt_client->on_pub_completed_cb)
 			mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
@@ -49,12 +49,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_pubrec_resp_t pubrec_resp;
 		enum mqtt_client_err_t rc = decode_pubrec_resp(mqtt_data, &header, &pubrec_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
 		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBREC_PACKET, pubrec_resp.packet_id, &idx_at_found);
 		if (!found)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		encode_mqtt_pubrel_msg(mqtt_client->pcb, &pubrec_resp.packet_id);
 
@@ -71,12 +71,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_pubcomp_resp_t pubcomp_resp;
 		enum mqtt_client_err_t rc = decode_pubcomp_resp(mqtt_data, &header, &pubcomp_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
 		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBREL_PACKET, pubcomp_resp.packet_id, &idx_at_found);
 		if (!found)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		if (mqtt_client->on_pub_completed_cb)
 			mqtt_client->on_pub_completed_cb(&mqtt_client->req_queue.requests[idx_at_found].context);
@@ -91,12 +91,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_suback_resp_t suback_resp;
 		enum mqtt_client_err_t rc = decode_suback_resp(mqtt_data, &header, &suback_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
 		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_SUBACK_PACKET, suback_resp.packet_id, &idx_at_found);
 		if (!found)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		if (mqtt_client->on_sub_completed_cb)
 			mqtt_client->on_sub_completed_cb(&suback_resp, &mqtt_client->req_queue.requests[idx_at_found].context);
@@ -111,7 +111,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_publish_resp_t publish_resp;
 		enum mqtt_client_err_t rc = decode_publish_resp(mqtt_data, &header, &publish_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		union mqtt_context_t pub_context;
 		create_mqtt_context_from_pub_response(&pub_context, &publish_resp);
@@ -150,12 +150,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_pubrel_resp_t pubrel_resp;
 		enum mqtt_client_err_t rc = decode_pubrel_resp(mqtt_data, &header, &pubrel_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
 		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_PUBCOMP_PACKET, pubrel_resp.packet_id, &idx_at_found);
 		if (!found)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		encode_mqtt_pubcomp_msg(mqtt_client->pcb, &pubrel_resp.packet_id);
 
@@ -173,12 +173,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		struct mqtt_unsuback_resp_t unsuback_resp;
 		enum mqtt_client_err_t rc = decode_unsuback_resp(mqtt_data, &header, &unsuback_resp);
 		if (rc != MQTT_SUCCESS)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
 		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_UNSUBACK_PACKET, unsuback_resp.packet_id, &idx_at_found);
 		if (!found)
-			return MQTT_ERROR_PARSING_MSG;
+			return MQTT_INVALID_MSG;
 
 		mqtt_req_queue_remove(&mqtt_client->req_queue, idx_at_found);
 

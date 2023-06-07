@@ -22,7 +22,6 @@ enum mqtt_client_err_t
 	MQTT_MEMORY_ERR = 5,
 	MQTT_TIMEOUT_ON_CONNECT = 6,
 	MQTT_CONNECTION_REFUSED_BY_BROKER = 7,
-	MQTT_ERROR_PARSING_MSG = 8
 };
 
 struct mqtt_client_connect_opts_t
