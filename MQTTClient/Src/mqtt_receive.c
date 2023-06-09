@@ -3,7 +3,7 @@
 #include "mqtt_decode.h"
 #include "mqtt_encode.h"
 #include "tcp_connection_raw.h"
-#include "mqtt_config.h"
+#include "mqtt_validate.h"
 
 enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client,
 		                               uint32_t* bytes_left)
@@ -109,17 +109,17 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return MQTT_INVALID_MSG;
 
 		/* check if message discarded */
-		if (mqtt_client->req_queue.num_active_req == MQTT_REQUESTS_QUEUE_LEN)
+		if (is_request_queue_full(mqtt_client))
 		{
 			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
 			return MQTT_SUCCESS;
 		}
-		if (publish_resp.data_len + 1 > MQTT_MAX_PAYLOAD_LEN)
+		if (is_message_too_long(publish_resp.data_len + 1))
 		{
 			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
 			return MQTT_SUCCESS;
 		}
-		if (publish_resp.topic_len + 1 > MQTT_MAX_TOPIC_LEN)
+		if (is_topic_too_long(publish_resp.topic_len + 1))
 		{
 			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
 			return MQTT_SUCCESS;

@@ -4,11 +4,18 @@
 #include "mqtt_packets.h"
 #include "mqtt_send.h"
 #include "mqtt_helpers.h"
-#include "mqtt_config.h"
+#include "mqtt_validate.h"
 
 #define CLEAN_SESSION 1
 static char* protocol_name = "MQTT";
 static uint8_t protocol_version = 0x04;
+
+#define PINGREQ_MSG_LEN 2
+#define DISCONNECT_MSG_LEN 2
+#define PUBREL_MSG_LEN 4
+#define PUBACK_MSG_LEN 4
+#define PUBREC_MSG_LEN 4
+#define PUBCOMP_MSG_LEN 4
 
 static uint16_t get_connect_packet_len(const struct mqtt_client_connect_opts_t* conn_opts)
 {
@@ -71,7 +78,7 @@ enum mqtt_client_err_t encode_mqtt_connect_msg(struct mqtt_client_t* mqtt_client
 {
 	uint16_t remaining_len = get_connect_packet_len(mqtt_client->conn_opts);
 	uint16_t packet_len = get_packet_len(remaining_len);
-	if (packet_len > TCPHandler_get_space_in_output_buffer(mqtt_client->pcb))
+	if (is_output_buffer_full(mqtt_client, packet_len))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
@@ -107,16 +114,16 @@ enum mqtt_client_err_t encode_mqtt_publish_msg(struct mqtt_client_t* mqtt_client
 {
 	uint16_t remaining_len = get_publish_packet_len(pub_msg->topic, pub_msg->payload, pub_msg->qos);
 	uint16_t packet_len = get_packet_len(remaining_len);
-	if (packet_len > TCPHandler_get_space_in_output_buffer(mqtt_client->pcb))
+	if (is_output_buffer_full(mqtt_client, packet_len))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
-	if (pub_msg->qos != 0 && mqtt_client->req_queue.num_active_req == MQTT_REQUESTS_QUEUE_LEN)
+	if (pub_msg->qos != 0 && is_request_queue_full(mqtt_client))
 		return MQTT_REQUESTS_QUEUE_FULL;
 
-	if (strlen(pub_msg->payload) + 1 > MQTT_MAX_PAYLOAD_LEN)
+	if (is_message_too_long(strlen(pub_msg->payload) + 1))
 		return MQTT_MESSAGE_TOO_LONG;
 
-	if (strlen(pub_msg->topic) + 1 > MQTT_MAX_TOPIC_LEN)
+	if (is_topic_too_long(strlen(pub_msg->topic) + 1))
 		return MQTT_TOPIC_TOO_LONG;
 
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (pub_msg->qos << 1) | pub_msg->retain);
@@ -137,13 +144,13 @@ enum mqtt_client_err_t encode_mqtt_subscribe_msg(struct mqtt_client_t* mqtt_clie
 {
 	uint16_t remaining_len = get_subscribe_packet_len(sub_msg->topic);
 	uint16_t packet_len = get_packet_len(remaining_len);
-	if (packet_len > TCPHandler_get_space_in_output_buffer(mqtt_client->pcb))
+	if (is_output_buffer_full(mqtt_client, packet_len))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
-	if (mqtt_client->req_queue.num_active_req == MQTT_REQUESTS_QUEUE_LEN)
+	if (is_request_queue_full(mqtt_client))
 		return MQTT_REQUESTS_QUEUE_FULL;
 
-	if (strlen(sub_msg->topic) + 1 > MQTT_MAX_TOPIC_LEN)
+	if (is_topic_too_long(strlen(sub_msg->topic) + 1))
 		return MQTT_TOPIC_TOO_LONG;
 
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
@@ -158,7 +165,7 @@ enum mqtt_client_err_t encode_mqtt_subscribe_msg(struct mqtt_client_t* mqtt_clie
 
 enum mqtt_client_err_t encode_mqtt_pingreq_msg(struct mqtt_client_t* mqtt_client)
 {
-	if (TCPHandler_get_space_in_output_buffer(mqtt_client->pcb) < 2)
+	if (is_output_buffer_full(mqtt_client, PINGREQ_MSG_LEN))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	send_fixed_header(mqtt_client->pcb, MQTT_PINGREQ_PACKET, 0);
@@ -167,7 +174,7 @@ enum mqtt_client_err_t encode_mqtt_pingreq_msg(struct mqtt_client_t* mqtt_client
 
 enum mqtt_client_err_t encode_mqtt_disconnect_msg(struct mqtt_client_t* mqtt_client)
 {
-	if (TCPHandler_get_space_in_output_buffer(mqtt_client->pcb) < 2)
+	if (is_output_buffer_full(mqtt_client, DISCONNECT_MSG_LEN))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	send_fixed_header(mqtt_client->pcb, MQTT_DISCONNECT_PACKET, 0);
@@ -176,7 +183,7 @@ enum mqtt_client_err_t encode_mqtt_disconnect_msg(struct mqtt_client_t* mqtt_cli
 
 enum mqtt_client_err_t encode_mqtt_pubrel_msg(struct mqtt_client_t* mqtt_client, uint16_t* packet_id)
 {
-	if (TCPHandler_get_space_in_output_buffer(mqtt_client->pcb) < 2)
+	if (is_output_buffer_full(mqtt_client, PUBREL_MSG_LEN))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	send_fixed_header(mqtt_client->pcb, (MQTT_PUBREL_PACKET | 0x02), 2);
@@ -186,7 +193,7 @@ enum mqtt_client_err_t encode_mqtt_pubrel_msg(struct mqtt_client_t* mqtt_client,
 
 enum mqtt_client_err_t encode_mqtt_puback_msg(struct mqtt_client_t* mqtt_client, uint16_t* packet_id)
 {
-	if (TCPHandler_get_space_in_output_buffer(mqtt_client->pcb) < 2)
+	if (is_output_buffer_full(mqtt_client, PUBACK_MSG_LEN))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	send_fixed_header(mqtt_client->pcb, MQTT_PUBACK_PACKET, 2);
@@ -196,7 +203,7 @@ enum mqtt_client_err_t encode_mqtt_puback_msg(struct mqtt_client_t* mqtt_client,
 
 enum mqtt_client_err_t encode_mqtt_pubrec_msg(struct mqtt_client_t* mqtt_client, uint16_t* packet_id)
 {
-	if (TCPHandler_get_space_in_output_buffer(mqtt_client->pcb) < 2)
+	if (is_output_buffer_full(mqtt_client, PUBREC_MSG_LEN))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	send_fixed_header(mqtt_client->pcb, MQTT_PUBREC_PACKET, 2);
@@ -206,7 +213,7 @@ enum mqtt_client_err_t encode_mqtt_pubrec_msg(struct mqtt_client_t* mqtt_client,
 
 enum mqtt_client_err_t encode_mqtt_pubcomp_msg(struct mqtt_client_t* mqtt_client, uint16_t* packet_id)
 {
-	if (TCPHandler_get_space_in_output_buffer(mqtt_client->pcb) < 2)
+	if (is_output_buffer_full(mqtt_client, PUBCOMP_MSG_LEN))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	send_fixed_header(mqtt_client->pcb, MQTT_PUBCOMP_PACKET, 2);
