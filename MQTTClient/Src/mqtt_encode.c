@@ -107,6 +107,12 @@ enum mqtt_client_err_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_
 	if (pub_msg->qos != 0 && num_active_requests == MQTT_REQUESTS_QUEUE_LEN)
 		return MQTT_REQUESTS_QUEUE_FULL;
 
+	if (strlen(pub_msg->payload) + 1 > MQTT_MAX_PAYLOAD_LEN)
+		return MQTT_MESSAGE_TOO_LONG;
+
+	if (strlen(pub_msg->topic) + 1 > MQTT_MAX_TOPIC_LEN)
+		return MQTT_TOPIC_TOO_LONG;
+
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (pub_msg->qos << 1) | pub_msg->retain);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 
@@ -131,6 +137,9 @@ enum mqtt_client_err_t encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqt
 
 	if (num_active_requests == MQTT_REQUESTS_QUEUE_LEN)
 		return MQTT_REQUESTS_QUEUE_FULL;
+
+	if (strlen(sub_msg->topic) + 1 > MQTT_MAX_TOPIC_LEN)
+		return MQTT_TOPIC_TOO_LONG;
 
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
@@ -210,6 +219,9 @@ enum mqtt_client_err_t encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct m
 
 	if (num_active_requests == MQTT_REQUESTS_QUEUE_LEN)
 		return MQTT_REQUESTS_QUEUE_FULL;
+
+	if (strlen(unsub_msg->topic) + 1 > MQTT_MAX_TOPIC_LEN)
+		return MQTT_TOPIC_TOO_LONG;
 
 	uint8_t ctrl_field = (MQTT_UNSUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);

@@ -108,6 +108,23 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (rc != MQTT_SUCCESS)
 			return MQTT_INVALID_MSG;
 
+		/* check if message discarded */
+		if (mqtt_client->req_queue.num_active_req == MQTT_REQUESTS_QUEUE_LEN)
+		{
+			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
+			return MQTT_SUCCESS;
+		}
+		if (publish_resp.data_len + 1 > MQTT_MAX_PAYLOAD_LEN)
+		{
+			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
+			return MQTT_SUCCESS;
+		}
+		if (publish_resp.topic_len + 1 > MQTT_MAX_TOPIC_LEN)
+		{
+			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
+			return MQTT_SUCCESS;
+		}
+
 		union mqtt_context_t pub_context;
 		create_mqtt_context_from_pub_response(&pub_context, &publish_resp);
 
@@ -130,12 +147,6 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		}
 		else if (publish_resp.qos == 2)
 		{
-			if (mqtt_client->req_queue.num_active_req == MQTT_REQUESTS_QUEUE_LEN)
-			{
-				*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
-				return MQTT_SUCCESS;
-			}
-
 			enum mqtt_client_err_t rc = encode_mqtt_pubrec_msg(mqtt_client->pcb, &publish_resp.packet_id);
 			if (rc != MQTT_SUCCESS)
 				return rc;
