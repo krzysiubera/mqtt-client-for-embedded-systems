@@ -1,4 +1,5 @@
 #include "mqtt_decode.h"
+#include "mqtt_helpers.h"
 #include <string.h>
 
 static uint32_t get_remaining_len(uint8_t* mqtt_data)
@@ -15,20 +16,6 @@ static uint32_t get_remaining_len(uint8_t* mqtt_data)
 		pos++;
 	} while ((encoded_byte & 128) != 0);
 	return remaining_len;
-}
-
-static uint8_t get_digits_remaining_len(uint32_t remaining_len)
-{
-	if (remaining_len < 128)
-		return 1;
-	else if (remaining_len < 16384)
-		return 2;
-	else if (remaining_len < 2097151)
-		return 3;
-	else if (remaining_len < 268435455)
-		return 4;
-	else
-		return 0;
 }
 
 struct mqtt_header_t decode_mqtt_header(uint8_t* mqtt_data)

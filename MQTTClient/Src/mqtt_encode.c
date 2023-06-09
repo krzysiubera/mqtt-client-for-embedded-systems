@@ -3,6 +3,7 @@
 #include <string.h>
 #include "mqtt_packets.h"
 #include "mqtt_send.h"
+#include "mqtt_helpers.h"
 
 #define CLEAN_SESSION 1
 static char* protocol_name = "MQTT";
@@ -60,12 +61,17 @@ static uint16_t get_packet_id(uint16_t* last_packet_id)
 	return (*last_packet_id);
 }
 
+static uint16_t get_packet_len(uint16_t remaining_len)
+{
+	return remaining_len + 1 + get_digits_remaining_len(remaining_len);
+}
+
 void encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_connect_opts_t* conn_opts)
 {
-	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
 	uint16_t remaining_len = get_connect_packet_len(conn_opts);
-	uint8_t connect_flags = get_connect_flags(conn_opts);
 
+	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
+	uint8_t connect_flags = get_connect_flags(conn_opts);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 	send_utf8_encoded_str(pcb, (uint8_t*) protocol_name, strlen(protocol_name));
 	send_u8(pcb, &protocol_version);
