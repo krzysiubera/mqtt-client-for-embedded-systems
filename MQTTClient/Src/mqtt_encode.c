@@ -66,9 +66,12 @@ static uint16_t get_packet_len(uint16_t remaining_len)
 	return remaining_len + 1 + get_digits_remaining_len(remaining_len);
 }
 
-void encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_connect_opts_t* conn_opts)
+enum mqtt_client_err_t encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_connect_opts_t* conn_opts)
 {
 	uint16_t remaining_len = get_connect_packet_len(conn_opts);
+	uint16_t packet_len = get_packet_len(remaining_len);
+	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
 
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
 	uint8_t connect_flags = get_connect_flags(conn_opts);
@@ -89,11 +92,16 @@ void encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_conne
 		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->username, strlen(conn_opts->username));
 	if (conn_opts->password)
 		send_utf8_encoded_str(pcb, (uint8_t*) conn_opts->password, strlen(conn_opts->password));
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg, uint16_t* last_packet_id)
+enum mqtt_client_err_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg, uint16_t* last_packet_id)
 {
 	uint16_t remaining_len = get_publish_packet_len(pub_msg->topic, pub_msg->payload, pub_msg->qos);
+	uint16_t packet_len = get_packet_len(remaining_len);
+	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (pub_msg->qos << 1) | pub_msg->retain);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 
@@ -105,11 +113,16 @@ void encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg
 		send_u16(pcb, &current_packet_id);
 	}
 	send_buffer(pcb, (uint8_t*) pub_msg->payload, strlen(pub_msg->payload));
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqtt_sub_msg_t* sub_msg, uint16_t* last_packet_id)
+enum mqtt_client_err_t encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqtt_sub_msg_t* sub_msg, uint16_t* last_packet_id)
 {
 	uint16_t remaining_len = get_subscribe_packet_len(sub_msg->topic);
+	uint16_t packet_len = get_packet_len(remaining_len);
+	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 
@@ -117,49 +130,79 @@ void encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqtt_sub_msg_t* sub_m
 	send_u16(pcb, &current_packet_id);
 	send_utf8_encoded_str(pcb, (uint8_t*) sub_msg->topic, strlen(sub_msg->topic));
 	send_u8(pcb, &sub_msg->qos);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_pingreq_msg(struct tcp_pcb* pcb)
+enum mqtt_client_err_t encode_mqtt_pingreq_msg(struct tcp_pcb* pcb)
 {
+	if (TCPHandler_get_space_in_output_buffer(pcb) < 2)
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	send_fixed_header(pcb, MQTT_PINGREQ_PACKET, 0);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_disconnect_msg(struct tcp_pcb* pcb)
+enum mqtt_client_err_t encode_mqtt_disconnect_msg(struct tcp_pcb* pcb)
 {
+	if (TCPHandler_get_space_in_output_buffer(pcb) < 2)
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	send_fixed_header(pcb, MQTT_DISCONNECT_PACKET, 0);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_pubrel_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
+enum mqtt_client_err_t encode_mqtt_pubrel_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
 {
+	if (TCPHandler_get_space_in_output_buffer(pcb) < 2)
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	send_fixed_header(pcb, (MQTT_PUBREL_PACKET | 0x02), 2);
 	send_u16(pcb, packet_id);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_puback_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
+enum mqtt_client_err_t encode_mqtt_puback_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
 {
+	if (TCPHandler_get_space_in_output_buffer(pcb) < 2)
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	send_fixed_header(pcb, MQTT_PUBACK_PACKET, 2);
 	send_u16(pcb, packet_id);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_pubrec_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
+enum mqtt_client_err_t encode_mqtt_pubrec_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
 {
+	if (TCPHandler_get_space_in_output_buffer(pcb) < 2)
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	send_fixed_header(pcb, MQTT_PUBREC_PACKET, 2);
 	send_u16(pcb, packet_id);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_pubcomp_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
+enum mqtt_client_err_t encode_mqtt_pubcomp_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
 {
+	if (TCPHandler_get_space_in_output_buffer(pcb) < 2)
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	send_fixed_header(pcb, MQTT_PUBCOMP_PACKET, 2);
 	send_u16(pcb, packet_id);
+	return MQTT_SUCCESS;
 }
 
-void encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg, uint16_t* last_packet_id)
+enum mqtt_client_err_t encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg, uint16_t* last_packet_id)
 {
 	uint16_t remaining_len = get_unsubscribe_packet_len(unsub_msg->topic);
+	uint16_t packet_len = get_packet_len(remaining_len);
+	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
+		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
 	uint8_t ctrl_field = (MQTT_UNSUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 
 	uint16_t current_packet_id = get_packet_id(last_packet_id);
 	send_u16(pcb, &current_packet_id);
 	send_utf8_encoded_str(pcb, (uint8_t*) unsub_msg->topic, strlen(unsub_msg->topic));
+	return MQTT_SUCCESS;
 }

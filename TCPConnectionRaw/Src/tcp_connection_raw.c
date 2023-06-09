@@ -99,3 +99,8 @@ void TCPHandler_close(struct tcp_pcb* pcb)
 {
 	tcp_close(pcb);
 }
+
+uint16_t TCPHandler_get_space_in_output_buffer(struct tcp_pcb* pcb)
+{
+	return pcb->snd_buf;
+}
