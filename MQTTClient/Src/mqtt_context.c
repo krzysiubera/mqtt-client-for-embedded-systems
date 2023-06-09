@@ -25,6 +25,13 @@ void save_mqtt_sub_context(union mqtt_context_t* context, struct mqtt_sub_msg_t*
 	context->sub.qos = sub_msg->qos;
 }
 
+void save_mqtt_unsub_context(union mqtt_context_t* context, struct mqtt_unsub_msg_t* unsub_msg)
+{
+	context->unsub.topic_len = strlen(unsub_msg->topic);
+	memcpy(context->unsub.topic, unsub_msg->topic, context->unsub.topic_len);
+	context->unsub.topic[context->unsub.topic_len] = '\0';
+}
+
 void create_mqtt_context_from_pub_response(union mqtt_context_t* context, struct mqtt_publish_resp_t* publish_resp)
 {
 	context->pub.topic_len = publish_resp->topic_len;

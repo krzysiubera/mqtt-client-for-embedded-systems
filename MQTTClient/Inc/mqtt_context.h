@@ -24,14 +24,22 @@ struct mqtt_sub_context_t
 	uint8_t qos;
 };
 
+struct mqtt_unsub_context_t
+{
+	uint8_t topic[MQTT_MAX_TOPIC_LEN];
+	uint16_t topic_len;
+};
+
 union mqtt_context_t
 {
 	struct mqtt_pub_context_t pub;
 	struct mqtt_sub_context_t sub;
+	struct mqtt_unsub_context_t unsub;
 };
 
 void save_mqtt_pub_context(union mqtt_context_t* context, struct mqtt_pub_msg_t* pub_msg);
 void save_mqtt_sub_context(union mqtt_context_t* context, struct mqtt_sub_msg_t* sub_msg);
+void save_mqtt_unsub_context(union mqtt_context_t* context, struct mqtt_unsub_msg_t* unsub_msg);
 void create_mqtt_context_from_pub_response(union mqtt_context_t* context, struct mqtt_publish_resp_t* publish_resp);
 
 #endif

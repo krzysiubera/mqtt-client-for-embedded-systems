@@ -129,7 +129,7 @@ int main(void)
   MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
 
-  MQTTClient_init(&mqtt_client, HAL_GetTick, &conn_opts, 5000);
+  MQTTClient_init(&mqtt_client, HAL_GetTick, &conn_opts);
   MQTTClient_set_cb_on_msg_received(&mqtt_client, on_msg_received_cb);
   MQTTClient_set_cb_on_sub_completed(&mqtt_client, on_sub_completed_cb);
   MQTTClient_set_cb_on_pub_completed(&mqtt_client, on_pub_completed_cb);

@@ -22,6 +22,7 @@ enum mqtt_client_err_t
 	MQTT_MEMORY_ERR = 5,
 	MQTT_TIMEOUT_ON_CONNECT = 6,
 	MQTT_CONNECTION_REFUSED_BY_BROKER = 7,
+	MQTT_REQUEST_NOT_FOUND = 8
 };
 
 struct mqtt_client_connect_opts_t
@@ -52,12 +53,11 @@ struct mqtt_client_t
 	on_pub_completed_cb_t on_pub_completed_cb;
 	uint32_t last_activity;
 	elapsed_time_cb_t elapsed_time_cb;
-	uint32_t timeout_on_connect_response_ms;
 	struct mqtt_req_queue_t req_queue;
 };
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, elapsed_time_cb_t elapsed_time_cb,
-					 const struct mqtt_client_connect_opts_t* conn_opts, uint32_t timeout_on_connect_response_ms);
+		             const struct mqtt_client_connect_opts_t* conn_opts);
 void MQTTClient_set_cb_on_msg_received(struct mqtt_client_t* mqtt_client, on_msg_received_cb_t on_msg_received_cb);
 void MQTTClient_set_cb_on_sub_completed(struct mqtt_client_t* mqtt_client, on_sub_completed_cb_t on_sub_completed_cb);
 void MQTTClient_set_cb_on_pub_completed(struct mqtt_client_t* mqtt_client, on_pub_completed_cb_t on_pub_completed_cb);
