@@ -83,7 +83,8 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, str
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_publish_msg(mqtt_client->pcb, pub_msg, &mqtt_client->last_packet_id);
+	enum mqtt_client_err_t rc = encode_mqtt_publish_msg(mqtt_client->pcb, pub_msg, &mqtt_client->last_packet_id,
+			                                            mqtt_client->req_queue.num_active_req);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 
@@ -114,7 +115,8 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, s
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_subscribe_msg(mqtt_client->pcb, sub_msg, &mqtt_client->last_packet_id);
+	enum mqtt_client_err_t rc = encode_mqtt_subscribe_msg(mqtt_client->pcb, sub_msg, &mqtt_client->last_packet_id,
+			                                              mqtt_client->req_queue.num_active_req);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 
@@ -178,7 +180,8 @@ enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client,
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_unsubscribe_msg(mqtt_client->pcb, unsub_msg, &mqtt_client->last_packet_id);
+	enum mqtt_client_err_t rc = encode_mqtt_unsubscribe_msg(mqtt_client->pcb, unsub_msg, &mqtt_client->last_packet_id,
+			                                                mqtt_client->req_queue.num_active_req);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 

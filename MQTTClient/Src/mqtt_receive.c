@@ -3,6 +3,7 @@
 #include "mqtt_decode.h"
 #include "mqtt_encode.h"
 #include "tcp_connection_raw.h"
+#include "mqtt_config.h"
 
 enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, struct mqtt_client_t* mqtt_client,
 		                               uint32_t* bytes_left)
@@ -129,6 +130,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		}
 		else if (publish_resp.qos == 2)
 		{
+			if (mqtt_client->req_queue.num_active_req == MQTT_REQUESTS_QUEUE_LEN)
+			{
+				*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
+				return MQTT_SUCCESS;
+			}
+
 			enum mqtt_client_err_t rc = encode_mqtt_pubrec_msg(mqtt_client->pcb, &publish_resp.packet_id);
 			if (rc != MQTT_SUCCESS)
 				return rc;

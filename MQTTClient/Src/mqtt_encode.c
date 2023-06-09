@@ -4,6 +4,7 @@
 #include "mqtt_packets.h"
 #include "mqtt_send.h"
 #include "mqtt_helpers.h"
+#include "mqtt_config.h"
 
 #define CLEAN_SESSION 1
 static char* protocol_name = "MQTT";
@@ -95,12 +96,16 @@ enum mqtt_client_err_t encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct
 	return MQTT_SUCCESS;
 }
 
-enum mqtt_client_err_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg, uint16_t* last_packet_id)
+enum mqtt_client_err_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg,
+		                                       uint16_t* last_packet_id, uint8_t num_active_requests)
 {
 	uint16_t remaining_len = get_publish_packet_len(pub_msg->topic, pub_msg->payload, pub_msg->qos);
 	uint16_t packet_len = get_packet_len(remaining_len);
 	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
+	if (pub_msg->qos != 0 && num_active_requests == MQTT_REQUESTS_QUEUE_LEN)
+		return MQTT_REQUESTS_QUEUE_FULL;
 
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (pub_msg->qos << 1) | pub_msg->retain);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
@@ -116,12 +121,16 @@ enum mqtt_client_err_t encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_
 	return MQTT_SUCCESS;
 }
 
-enum mqtt_client_err_t encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqtt_sub_msg_t* sub_msg, uint16_t* last_packet_id)
+enum mqtt_client_err_t encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqtt_sub_msg_t* sub_msg,
+		                                         uint16_t* last_packet_id, uint8_t num_active_requests)
 {
 	uint16_t remaining_len = get_subscribe_packet_len(sub_msg->topic);
 	uint16_t packet_len = get_packet_len(remaining_len);
 	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
+	if (num_active_requests == MQTT_REQUESTS_QUEUE_LEN)
+		return MQTT_REQUESTS_QUEUE_FULL;
 
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
@@ -191,12 +200,16 @@ enum mqtt_client_err_t encode_mqtt_pubcomp_msg(struct tcp_pcb* pcb, uint16_t* pa
 	return MQTT_SUCCESS;
 }
 
-enum mqtt_client_err_t encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg, uint16_t* last_packet_id)
+enum mqtt_client_err_t encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg,
+		                                           uint16_t* last_packet_id, uint8_t num_active_requests)
 {
 	uint16_t remaining_len = get_unsubscribe_packet_len(unsub_msg->topic);
 	uint16_t packet_len = get_packet_len(remaining_len);
 	if (packet_len > TCPHandler_get_space_in_output_buffer(pcb))
 		return MQTT_NOT_ENOUGH_SPACE_IN_OUTPUT_BUFFER;
+
+	if (num_active_requests == MQTT_REQUESTS_QUEUE_LEN)
+		return MQTT_REQUESTS_QUEUE_FULL;
 
 	uint8_t ctrl_field = (MQTT_UNSUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
