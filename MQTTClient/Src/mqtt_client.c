@@ -63,7 +63,7 @@ enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client)
 	if (rc != MQTT_SUCCESS)
 		return MQTT_TCP_CONNECT_FAILURE;
 
-	rc = encode_mqtt_connect_msg(mqtt_client->pcb, mqtt_client->conn_opts);
+	rc = encode_mqtt_connect_msg(mqtt_client);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 
@@ -83,8 +83,7 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, str
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_publish_msg(mqtt_client->pcb, pub_msg, &mqtt_client->last_packet_id,
-			                                            mqtt_client->req_queue.num_active_req);
+	enum mqtt_client_err_t rc = encode_mqtt_publish_msg(mqtt_client, pub_msg);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 
@@ -115,8 +114,7 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, s
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_subscribe_msg(mqtt_client->pcb, sub_msg, &mqtt_client->last_packet_id,
-			                                              mqtt_client->req_queue.num_active_req);
+	enum mqtt_client_err_t rc = encode_mqtt_subscribe_msg(mqtt_client, sub_msg);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 
@@ -138,7 +136,7 @@ void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
 	uint32_t current_time = mqtt_client->elapsed_time_cb();
 	if ((current_time - mqtt_client->last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
 	{
-		enum mqtt_client_err_t rc = encode_mqtt_pingreq_msg(mqtt_client->pcb);
+		enum mqtt_client_err_t rc = encode_mqtt_pingreq_msg(mqtt_client);
 		if (rc != MQTT_SUCCESS)
 		{
 			TCPHandler_close(mqtt_client->pcb);
@@ -156,7 +154,7 @@ enum mqtt_client_err_t MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_disconnect_msg(mqtt_client->pcb);
+	enum mqtt_client_err_t rc = encode_mqtt_disconnect_msg(mqtt_client);
 	if (rc == MQTT_SUCCESS)
 		TCPHandler_output(mqtt_client->pcb);
 
@@ -180,8 +178,7 @@ enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client,
 	if (!mqtt_client->mqtt_connected)
 		return MQTT_NOT_CONNECTED;
 
-	enum mqtt_client_err_t rc = encode_mqtt_unsubscribe_msg(mqtt_client->pcb, unsub_msg, &mqtt_client->last_packet_id,
-			                                                mqtt_client->req_queue.num_active_req);
+	enum mqtt_client_err_t rc = encode_mqtt_unsubscribe_msg(mqtt_client, unsub_msg);
 	if (rc != MQTT_SUCCESS)
 		return rc;
 

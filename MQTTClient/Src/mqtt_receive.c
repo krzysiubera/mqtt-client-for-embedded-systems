@@ -55,7 +55,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
-		rc = encode_mqtt_pubrel_msg(mqtt_client->pcb, &pubrec_resp.packet_id);
+		rc = encode_mqtt_pubrel_msg(mqtt_client, &pubrec_resp.packet_id);
 		if (rc != MQTT_SUCCESS)
 			return rc;
 
@@ -135,7 +135,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		}
 		else if (publish_resp.qos == 1)
 		{
-			enum mqtt_client_err_t rc = encode_mqtt_puback_msg(mqtt_client->pcb, &publish_resp.packet_id);
+			enum mqtt_client_err_t rc = encode_mqtt_puback_msg(mqtt_client, &publish_resp.packet_id);
 			if (rc != MQTT_SUCCESS)
 				return rc;
 
@@ -147,7 +147,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		}
 		else if (publish_resp.qos == 2)
 		{
-			enum mqtt_client_err_t rc = encode_mqtt_pubrec_msg(mqtt_client->pcb, &publish_resp.packet_id);
+			enum mqtt_client_err_t rc = encode_mqtt_pubrec_msg(mqtt_client, &publish_resp.packet_id);
 			if (rc != MQTT_SUCCESS)
 				return rc;
 
@@ -173,7 +173,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
-		rc = encode_mqtt_pubcomp_msg(mqtt_client->pcb, &pubrel_resp.packet_id);
+		rc = encode_mqtt_pubcomp_msg(mqtt_client, &pubrel_resp.packet_id);
 		if (rc != MQTT_SUCCESS)
 			return rc;
 
