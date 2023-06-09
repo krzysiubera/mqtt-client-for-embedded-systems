@@ -8,9 +8,9 @@
 static char* protocol_name = "MQTT";
 static uint8_t protocol_version = 0x04;
 
-static uint32_t get_connect_packet_len(const struct mqtt_client_connect_opts_t* conn_opts)
+static uint16_t get_connect_packet_len(const struct mqtt_client_connect_opts_t* conn_opts)
 {
-	uint32_t len = 10 + 2 + strlen(conn_opts->client_id);
+	uint16_t len = 10 + 2 + strlen(conn_opts->client_id);
 	if (conn_opts->will_msg.topic)
 		len += (2 + strlen(conn_opts->will_msg.topic));
 	if (conn_opts->will_msg.payload)
@@ -32,20 +32,20 @@ static uint8_t get_connect_flags(const struct mqtt_client_connect_opts_t* conn_o
 			(CLEAN_SESSION << 1);
 }
 
-static uint32_t get_publish_packet_len(char* topic, char* msg, uint8_t qos)
+static uint16_t get_publish_packet_len(char* topic, char* msg, uint8_t qos)
 {
-	uint32_t remaining_len = 2 + strlen(topic) + strlen(msg);
+	uint16_t remaining_len = 2 + strlen(topic) + strlen(msg);
 	if (qos != 0)
 		remaining_len += 2;
 	return remaining_len;
 }
 
-static uint32_t get_subscribe_packet_len(char* topic)
+static uint16_t get_subscribe_packet_len(char* topic)
 {
 	return 2 + 2 + strlen(topic) + 1;
 }
 
-static uint32_t get_unsubscribe_packet_len(char* topic)
+static uint16_t get_unsubscribe_packet_len(char* topic)
 {
 	return 2 + 2 + strlen(topic);
 }
@@ -63,7 +63,7 @@ static uint16_t get_packet_id(uint16_t* last_packet_id)
 void encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_connect_opts_t* conn_opts)
 {
 	uint8_t ctrl_field = (uint8_t) MQTT_CONNECT_PACKET;
-	uint32_t remaining_len = get_connect_packet_len(conn_opts);
+	uint16_t remaining_len = get_connect_packet_len(conn_opts);
 	uint8_t connect_flags = get_connect_flags(conn_opts);
 
 	send_fixed_header(pcb, ctrl_field, remaining_len);
@@ -87,7 +87,7 @@ void encode_mqtt_connect_msg(struct tcp_pcb* pcb, const struct mqtt_client_conne
 
 void encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg, uint16_t* last_packet_id)
 {
-	uint32_t remaining_len = get_publish_packet_len(pub_msg->topic, pub_msg->payload, pub_msg->qos);
+	uint16_t remaining_len = get_publish_packet_len(pub_msg->topic, pub_msg->payload, pub_msg->qos);
 	uint8_t ctrl_field = (MQTT_PUBLISH_PACKET | (0 << 3) | (pub_msg->qos << 1) | pub_msg->retain);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 
@@ -103,7 +103,7 @@ void encode_mqtt_publish_msg(struct tcp_pcb* pcb, struct mqtt_pub_msg_t* pub_msg
 
 void encode_mqtt_subscribe_msg(struct tcp_pcb* pcb, struct mqtt_sub_msg_t* sub_msg, uint16_t* last_packet_id)
 {
-	uint32_t remaining_len = get_subscribe_packet_len(sub_msg->topic);
+	uint16_t remaining_len = get_subscribe_packet_len(sub_msg->topic);
 	uint8_t ctrl_field = (MQTT_SUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 
@@ -149,7 +149,7 @@ void encode_mqtt_pubcomp_msg(struct tcp_pcb* pcb, uint16_t* packet_id)
 
 void encode_mqtt_unsubscribe_msg(struct tcp_pcb* pcb, struct mqtt_unsub_msg_t* unsub_msg, uint16_t* last_packet_id)
 {
-	uint32_t remaining_len = get_unsubscribe_packet_len(unsub_msg->topic);
+	uint16_t remaining_len = get_unsubscribe_packet_len(unsub_msg->topic);
 	uint8_t ctrl_field = (MQTT_UNSUBSCRIBE_PACKET | 0x02);
 	send_fixed_header(pcb, ctrl_field, remaining_len);
 

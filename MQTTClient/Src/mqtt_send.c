@@ -38,7 +38,7 @@ void send_u8(struct tcp_pcb* pcb, uint8_t* val)
 	TCPHandler_write(pcb, val, 1);
 }
 
-void send_fixed_header(struct tcp_pcb* pcb, uint8_t ctrl_field, uint32_t remaining_len)
+void send_fixed_header(struct tcp_pcb* pcb, uint8_t ctrl_field, uint16_t remaining_len)
 {
 	uint8_t remaining_len_encoded[4];
 	memset(remaining_len_encoded, 0, 4);
