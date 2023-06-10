@@ -32,7 +32,7 @@ struct mqtt_req_queue_t
 
 void mqtt_req_queue_init(struct mqtt_req_queue_t* req_queue);
 bool mqtt_req_queue_add(struct mqtt_req_queue_t* req_queue, struct mqtt_req_t* req);
-bool mqtt_req_queue_update(struct mqtt_req_queue_t* req_queue, enum mqtt_conv_state_t current_conv_state,
-		                   uint16_t packet_id, uint8_t* idx_at_found);
+bool mqtt_req_queue_find(struct mqtt_req_queue_t* req_queue, enum mqtt_conv_state_t current_conv_state,
+		                 uint16_t packet_id, uint8_t* idx_at_found);
 
 #endif

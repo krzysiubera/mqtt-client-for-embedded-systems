@@ -33,7 +33,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return rc;
 
 		uint8_t idx_at_found;
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBACK, puback_resp.packet_id, &idx_at_found);
+		bool found = mqtt_req_queue_find(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBACK, puback_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
@@ -51,7 +51,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return rc;
 
 		uint8_t idx_at_found;
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBREC, pubrec_resp.packet_id, &idx_at_found);
+		bool found = mqtt_req_queue_find(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBREC, pubrec_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
@@ -73,7 +73,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return rc;
 
 		uint8_t idx_at_found;
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBCOMP, pubcomp_resp.packet_id, &idx_at_found);
+		bool found = mqtt_req_queue_find(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBCOMP, pubcomp_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
@@ -91,7 +91,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return rc;
 
 		uint8_t idx_at_found;
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_WAITING_FOR_SUBACK, suback_resp.packet_id, &idx_at_found);
+		bool found = mqtt_req_queue_find(&mqtt_client->req_queue, MQTT_WAITING_FOR_SUBACK, suback_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
@@ -160,7 +160,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return rc;
 
 		uint8_t idx_at_found;
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBREL, pubrel_resp.packet_id, &idx_at_found);
+		bool found = mqtt_req_queue_find(&mqtt_client->req_queue, MQTT_WAITING_FOR_PUBREL, pubrel_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
@@ -185,7 +185,7 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return MQTT_INVALID_MSG;
 
 		uint8_t idx_at_found;
-		bool found = mqtt_req_queue_update(&mqtt_client->req_queue, MQTT_WAITING_FOR_UNSUBACK, unsuback_resp.packet_id, &idx_at_found);
+		bool found = mqtt_req_queue_find(&mqtt_client->req_queue, MQTT_WAITING_FOR_UNSUBACK, unsuback_resp.packet_id, &idx_at_found);
 		if (!found)
 			return MQTT_REQUEST_NOT_FOUND;
 
