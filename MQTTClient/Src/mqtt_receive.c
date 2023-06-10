@@ -109,17 +109,8 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 			return MQTT_INVALID_MSG;
 
 		/* check if message discarded */
-		if (is_request_queue_full(mqtt_client))
-		{
-			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
-			return MQTT_SUCCESS;
-		}
-		if (is_message_too_long(publish_resp.data_len + 1))
-		{
-			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
-			return MQTT_SUCCESS;
-		}
-		if (is_topic_too_long(publish_resp.topic_len + 1))
+		if (is_request_queue_full(mqtt_client) || is_message_too_long(publish_resp.data_len + 1) ||
+			is_topic_too_long(publish_resp.topic_len + 1))
 		{
 			*bytes_left = (tot_len - 1 - header.digits_remaining_len) - header.remaining_len;
 			return MQTT_SUCCESS;
