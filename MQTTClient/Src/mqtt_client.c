@@ -97,14 +97,16 @@ enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, str
 		union mqtt_context_t pub_context;
 		save_mqtt_pub_context(&pub_context, pub_msg);
 		struct mqtt_req_t puback_req = { .packet_id=current_packet_id, .context=pub_context, .conv_state=MQTT_WAITING_FOR_PUBACK };
-		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req);
+		uint8_t idx_at_added;
+		mqtt_req_queue_add(&mqtt_client->req_queue, &puback_req, &idx_at_added);
 	}
 	else if (pub_msg->qos == 2)
 	{
 		union mqtt_context_t pub_context;
 		save_mqtt_pub_context(&pub_context, pub_msg);
 		struct mqtt_req_t pubrec_req = { .packet_id=current_packet_id, .context=pub_context, .conv_state=MQTT_WAITING_FOR_PUBREC };
-		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req);
+		uint8_t idx_at_added;
+		mqtt_req_queue_add(&mqtt_client->req_queue, &pubrec_req, &idx_at_added);
 	}
 	return MQTT_SUCCESS;
 }
@@ -126,7 +128,8 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, s
 	union mqtt_context_t sub_context;
 	save_mqtt_sub_context(&sub_context, sub_msg);
 	struct mqtt_req_t suback_req = { .packet_id=current_packet_id, .context=sub_context, .conv_state=MQTT_WAITING_FOR_SUBACK };
-	mqtt_req_queue_add(&mqtt_client->req_queue, &suback_req);
+	uint8_t idx_at_added;
+	mqtt_req_queue_add(&mqtt_client->req_queue, &suback_req, &idx_at_added);
 
 	return MQTT_SUCCESS;
 }
@@ -190,7 +193,8 @@ enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client,
 	union mqtt_context_t unsub_context;
 	save_mqtt_unsub_context(&unsub_context, unsub_msg);
 	struct mqtt_req_t unsub_req = { .packet_id=current_packet_id, .context=unsub_context, .conv_state=MQTT_WAITING_FOR_UNSUBACK };
-	mqtt_req_queue_add(&mqtt_client->req_queue, &unsub_req);
+	uint8_t idx_at_added;
+	mqtt_req_queue_add(&mqtt_client->req_queue, &unsub_req, &idx_at_added);
 
 	return MQTT_SUCCESS;
 }
