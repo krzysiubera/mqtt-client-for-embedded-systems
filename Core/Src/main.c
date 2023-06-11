@@ -189,7 +189,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  MQTTClient_loop(&mqtt_client);
+	  enum mqtt_client_err_t rc = MQTTClient_loop(&mqtt_client);
+	  if (rc != MQTT_SUCCESS)
+	  {
+		  printf("Disconnected due to: %d\n", rc);
+		  while (1);
+	  }
 
 	  current_time = HAL_GetTick();
 	  if (current_time - previous_time >= 20000 && mqtt_client.mqtt_connected)
