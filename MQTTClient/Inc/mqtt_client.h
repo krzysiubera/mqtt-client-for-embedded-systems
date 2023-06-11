@@ -58,6 +58,9 @@ struct mqtt_client_t
 	uint32_t last_activity;
 	elapsed_time_cb_t elapsed_time_cb;
 	struct mqtt_req_queue_t req_queue;
+
+	uint32_t last_ping_sent_time;
+	bool is_pong_pending;
 };
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, elapsed_time_cb_t elapsed_time_cb,
@@ -65,12 +68,12 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client, elapsed_time_cb_t elapse
 void MQTTClient_set_cb_on_msg_received(struct mqtt_client_t* mqtt_client, on_msg_received_cb_t on_msg_received_cb);
 void MQTTClient_set_cb_on_sub_completed(struct mqtt_client_t* mqtt_client, on_sub_completed_cb_t on_sub_completed_cb);
 void MQTTClient_set_cb_on_pub_completed(struct mqtt_client_t* mqtt_client, on_pub_completed_cb_t on_pub_completed_cb);
+
 enum mqtt_client_err_t MQTTClient_connect(struct mqtt_client_t* mqtt_client);
 enum mqtt_client_err_t MQTTClient_publish(struct mqtt_client_t* mqtt_client, struct mqtt_pub_msg_t* pub_msg);
 enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, struct mqtt_sub_msg_t* sub_msg);
-void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client);
 enum mqtt_client_err_t MQTTClient_disconnect(struct mqtt_client_t* mqtt_client);
-void MQTTClient_loop(struct mqtt_client_t* mqtt_client);
+enum mqtt_client_err_t MQTTClient_loop(struct mqtt_client_t* mqtt_client);
 enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client, struct mqtt_unsub_msg_t* unsub_msg);
 
 

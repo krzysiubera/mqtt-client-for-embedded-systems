@@ -205,6 +205,12 @@ enum mqtt_client_err_t get_mqtt_packet(uint8_t* mqtt_data, uint16_t tot_len, str
 		*bytes_left = (tot_len - 1 - header.digits_remaining_len) - UNSUBACK_RESP_LEN;
 		return MQTT_SUCCESS;
 	}
+	case MQTT_PINGRESP_PACKET:
+	{
+		mqtt_client->is_pong_pending = false;
+		*bytes_left = (tot_len - 2);
+		return MQTT_SUCCESS;
+	}
 	default:
 	{
 		*bytes_left = 0;

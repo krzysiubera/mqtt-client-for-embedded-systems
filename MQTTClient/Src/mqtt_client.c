@@ -6,8 +6,9 @@
 #include "tcp_connection_raw.h"
 
 static const uint32_t timeout_on_connect_response_ms = 5000;
+static const uint32_t timeout_on_ping_response_ms = 200;
 
-void wait_for_connack(struct mqtt_client_t* mqtt_client)
+static void wait_for_connack(struct mqtt_client_t* mqtt_client)
 {
 	bool expired = false;
 	uint32_t entry_time_ms = mqtt_client->elapsed_time_cb();
@@ -16,6 +17,25 @@ void wait_for_connack(struct mqtt_client_t* mqtt_client)
 		TCPHandler_process_lwip_packets();
 		expired = (mqtt_client->elapsed_time_cb() - entry_time_ms > timeout_on_connect_response_ms);
 	} while ((!mqtt_client->connack_resp_available) && (!expired));
+}
+
+static enum mqtt_client_err_t mqtt_handle_keepalive(struct mqtt_client_t* mqtt_client)
+{
+	if (!(mqtt_client->elapsed_time_cb() - mqtt_client->last_activity >= mqtt_client->conn_opts->keepalive_ms))
+		return MQTT_SUCCESS;
+
+	enum mqtt_client_err_t rc = encode_mqtt_pingreq_msg(mqtt_client);
+	if (rc != MQTT_SUCCESS)
+	{
+		TCPHandler_close(mqtt_client->pcb);
+		mqtt_client->mqtt_connected = false;
+		return MQTT_NOT_CONNECTED;
+	}
+	TCPHandler_output(mqtt_client->pcb);
+	mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
+	mqtt_client->last_ping_sent_time = mqtt_client->last_activity;
+	mqtt_client->is_pong_pending = true;
+	return MQTT_SUCCESS;
 }
 
 void MQTTClient_init(struct mqtt_client_t* mqtt_client, elapsed_time_cb_t elapsed_time_cb,
@@ -33,6 +53,9 @@ void MQTTClient_init(struct mqtt_client_t* mqtt_client, elapsed_time_cb_t elapse
 	mqtt_client->on_msg_received_cb = NULL;
 	mqtt_client->on_pub_completed_cb = NULL;
 	mqtt_client->on_sub_completed_cb = NULL;
+
+	mqtt_client->is_pong_pending = false;
+	mqtt_client->last_ping_sent_time = 0;
 }
 
 void MQTTClient_set_cb_on_msg_received(struct mqtt_client_t* mqtt_client, on_msg_received_cb_t on_msg_received_cb)
@@ -134,24 +157,6 @@ enum mqtt_client_err_t MQTTClient_subscribe(struct mqtt_client_t* mqtt_client, s
 	return MQTT_SUCCESS;
 }
 
-void MQTTClient_keepalive(struct mqtt_client_t* mqtt_client)
-{
-	uint32_t current_time = mqtt_client->elapsed_time_cb();
-	if ((current_time - mqtt_client->last_activity >= mqtt_client->conn_opts->keepalive_ms) && (mqtt_client->mqtt_connected))
-	{
-		enum mqtt_client_err_t rc = encode_mqtt_pingreq_msg(mqtt_client);
-		if (rc != MQTT_SUCCESS)
-		{
-			TCPHandler_close(mqtt_client->pcb);
-			mqtt_client->mqtt_connected = false;
-			return;
-		}
-
-		TCPHandler_output(mqtt_client->pcb);
-		mqtt_client->last_activity = mqtt_client->elapsed_time_cb();
-	}
-}
-
 enum mqtt_client_err_t MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 {
 	if (!mqtt_client->mqtt_connected)
@@ -167,13 +172,27 @@ enum mqtt_client_err_t MQTTClient_disconnect(struct mqtt_client_t* mqtt_client)
 	return MQTT_SUCCESS;
 }
 
-void MQTTClient_loop(struct mqtt_client_t* mqtt_client)
+enum mqtt_client_err_t MQTTClient_loop(struct mqtt_client_t* mqtt_client)
 {
 	TCPHandler_process_lwip_packets();
-	if (mqtt_client->mqtt_connected)
+	if (!mqtt_client->mqtt_connected)
+		return MQTT_NOT_CONNECTED;
+
+	enum mqtt_client_err_t rc = mqtt_handle_keepalive(mqtt_client);
+	if (rc != MQTT_SUCCESS)
+		return rc;
+
+	while (mqtt_client->is_pong_pending && mqtt_client->elapsed_time_cb() - mqtt_client->last_ping_sent_time < timeout_on_ping_response_ms)
+		TCPHandler_process_lwip_packets();
+
+	if (mqtt_client->is_pong_pending)
 	{
-		MQTTClient_keepalive(mqtt_client);
+		TCPHandler_close(mqtt_client->pcb);
+		mqtt_client->mqtt_connected = false;
+		return MQTT_NOT_CONNECTED;
 	}
+
+	return MQTT_SUCCESS;
 }
 
 enum mqtt_client_err_t MQTTClient_unsubscribe(struct mqtt_client_t* mqtt_client, struct mqtt_unsub_msg_t* unsub_msg)
